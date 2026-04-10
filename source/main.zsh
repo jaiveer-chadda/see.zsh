@@ -4,10 +4,11 @@ see() {
 
   # — Early Debug Mode ————————————————————————————————————————————————————— #
 
-  # this is here as a far less checked, but earlier activated, debug flag
+  # this is here as a less checked, but earlier activated debug flag
   #  so I can debug the input parsing
   local -r _CUSTOM_PS4=$'%F{red}+ %N:%I%F{blue}\t>%f '
 
+  # Note that `-D` will act as `-d` if it isn't the sole first argument
   if [[ "$1" == '-D' ]] {
     echo "${(%)_CUSTOM_PS4}changing \$PS4 locally to '$_CUSTOM_PS4'" >&2
     local PS4="$_CUSTOM_PS4"
@@ -32,8 +33,9 @@ see() {
   local -r _space_char='␣'  # '␣' / '␠' / ' '
   local -r _space_repr="$_space_blue␣$_reset"
 
-  local -rA _none_esc_chars=()
 
+  local -rA _none_esc_chars=(
+  )
 
   local -rA _c_esc_chars=(
     [esc_col]="$_c_blue"
@@ -66,30 +68,27 @@ see() {
 
   # — User Input ——————————————————————————————————————————————————————————— #
 
+  # Note: a 'u_' prefix indicates a user-inputted value
   local -i 10 u_debug=0     # [bool] debug mode (implies verbose)
   local -i 10 u_verbose=0   # [bool] verbose mode
   local -i 10 u_text_mode=0 # [bool] show just text instead of columns
   local -i 10 u_columns=32  # width for column mode (≈ xxd -c)
   local -i 10 u_zero_pad=2  # how many 0s to add
-  local u_esc_chars         # which set of esc chars to use
-  #                         # - options are: (case-insensitive)
-  #                         #   - c
-  #                         #   - caret
-  #                         #   - cdash  # \C-
-  #                         #   - unicode (default)
-  #                         #   - none
+  local u_esc_chars=''      # which set of esc chars to use. the options are:
+  #                         #   unicode    c    caret    cdash    none
 
-  while getopts 'DdvtCc:0:e:' opt; do
-    case "$opt" in
-     [Dd] ) u_debug=1 u_verbose=1 ;; # early-(D)ebug/(d)ebug [implies -v]
-      v   ) u_verbose=1           ;; # (v)erbose
-      t   ) u_text_mode=1         ;; # (t)ext mode [↓ opposites]
-      C   ) u_text_mode=0         ;; # (C)olumn mode    [↑ opposites]
-      c   ) u_columns="$OPTARG"   ;; # number of (c)olumns [column mode only]
-      0   ) u_zero_pad="$OPTARG"  ;; # hex (0)-padding [column mode only]
-      e   ) u_esc_chars="$OPTARG" ;; # (e)scape charset to use
-    esac
-  done
+  while { getopts 'DdvtCc:0:e:' opt; } {
+    case "$opt" {
+      [Dd]) u_debug=1 u_verbose=1 ;; # early-(D)ebug/(d)ebug [implies -v]
+      v) u_verbose=1              ;; # (v)erbose
+      t) u_text_mode=1            ;; # (t)ext  mode  [↓ opposites]
+      C) u_text_mode=0            ;; # (C)olumn mode [↑ opposites]
+      c) u_columns="$OPTARG"      ;; # number of (c)olumns [column mode only]
+      0) u_zero_pad="$OPTARG"     ;; # hex (0)-padding     [column mode only]
+      e) u_esc_chars="$OPTARG"    ;; # (e)scape charset to use
+    }
+  }
+
   shift $(( OPTIND - 1 ))
 
   if (( u_debug )) {
@@ -103,10 +102,10 @@ see() {
   }
 
   # recreate the esc charset variable name from input
-  u_esc_chars="_${(L)u_esc_chars:-unicode}_esc_chars"
+  _charset_name="_${(L)u_esc_chars:-unicode}_esc_chars"
   # then pass that input by name (P) into the
   #  assoc array that's gonna be used for displaying chars
-  local -rA esc_chars=( "${(@Pkv)u_esc_chars}" )
+  local -rA esc_chars=( "${(@Pkv)_charset_name}" )
 
   # read input from stdin, and append a newline to each line
   # note: the `|| [[ -n ...` section allows the last line to be read
@@ -140,23 +139,12 @@ see() {
   # — Outputting Results ——————————————————————————————————————————————————— #
 
   local char hex
-
-  if (( u_debug )) { set +x; echo "${(r:4::\n:)}"; line; line; set -x; }
-
   for char hex in "${(@)result}"; {
-    if (( u_debug )) {
-      set +x
-      echo "${(%)PS4}\e[35mchar \e[0m : >>${(qqqq)char}<<"
-      echo "${(%)PS4}\e[35mhex  \e[0m : >>$hex<<"
-      echo "${(%)PS4}\e[35mhex_i\e[0m : >>$(( (16#$hex) ))<<\n"
-      set -x
-    }
-
     # if we're in text mode, and char is a newline (0x0a),
-    #  print a newline (`echo`), for legibility
+    #  print a newline (`echo`) for legibility
     if [[ "$u_text_mode" && "${(L)hex}" == "$_NL_0x" ]] echo
 
-    # replace all special chars with their special representations
+    # replace all chars with their special representations, if applicable
     if [[ "$char" == "$_SP" ]] char="$_space_repr"
     if [[ "${esc_chars[(Ie)$char]}" ]] \
       char="${esc_chars[esc_col]}${esc_chars[$char]}$_reset"
@@ -166,18 +154,17 @@ see() {
 
     # always print the char itself
     echo -n "$char"
-    # and then if we're in column mode (non-textonly mode),
-    #  print the hex code, separator, and newline
+    # and then if we're in column mode,
+    #  print the hex code, separator, and a newline
     # also, make the hex code uppercase, and left-pad it with 5 spaces
     if ! (( u_text_mode )) echo "  :  ${(Ul:5:: :)hex}"
     # Note: when printing, make  ↑ sure a non-escapable char
     #  comes after it, or a backslash will mangle it
-
-    if (( u_debug )) { set +x; echo "${(r:4::\n:)}"; line; set -x; }
   }
   # final newline, since text mode is using `echo -n`
   if (( u_text_mode )) echo
-  if (( u_debug )) { set +x; line; }
+  if (( u_debug     )) set +x
+  if (( u_verbose   )) line
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
@@ -186,23 +173,31 @@ see() {
 #  equivalent to `if __name__ == "__main__"`
 if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
   # clear
-  # echo -n "this is a normal•str" | see "$@"
-  # echo -n "this is a normal•str" | see -d
-  # echo -n $'this?→\x00, it\'s a\nlong•"str" 🖮\a␤ \\ 𱌮' | see 
-  # echo -n $'this?→\x00, it\'s a
-  # long•"str" 🖮\a␤ \\ 𱌮' | see "$@"
-  echo -n $'str w \x0 a
-  nl' | see "$@"
-  # echo -n $'\\\a\b\e\f\n\r\t\v' | see
 
-  # cat $0 | see
-  # cat ./control_chars.txt | see
+  # echo -n "this is a normal•str" | see "$@"
+
+  echo -n $'this?→\x00, it\'s a\nlong•"str" 🖮\a␤ \\ 𱌮' | see "$@"
+
+  # echo -n $'str w \x0 a\nnl' | see "$@"
+
+  # echo -n $'\\\a\b\e\f\n\r\t\v' | see "$@"
+
+  # echo $'test \e[31mstr\e[0m' | see "$@"
+
+  # cat $0 | see "$@"
+
+  # cat ../resources/control_chars.txt | see "$@"
 }
+
+# ——————————————————————————————————————————————————————————————————————————— #
+
+# this function's down here for now
+#  so I can get a more accurate line number during errors
+line() { echo ${(r:$COLUMNS::─:)}; };
+
 # ——————————————————————————————————————————————————————————————————————————— #
 
 # spell-checker:ignore cdash
 # spell-checker:ignoreRegExp /(?<=(^|\s)#.*\(.\))\w+/g
 # spell-checker:ignoreRegExp /(?<=getopts) '[^']+'/g
 # spell-checker:ignoreRegExp /\\(e|033|x1b)\[[0-9;]+?m\B/g
-
-line() { echo ${(r:$COLUMNS::─:)}; }
