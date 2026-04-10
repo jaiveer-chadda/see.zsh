@@ -1,5 +1,8 @@
 #!/usr/bin/env zsh
 
+see::line()  { echo ${(r:$COLUMNS::─:)}; };
+see::usage() { echo 'Usage: ...'; }
+
 see() {
 
   # — Early Debug Mode ————————————————————————————————————————————————————— #
@@ -68,24 +71,37 @@ see() {
 
   # — User Input ——————————————————————————————————————————————————————————— #
 
-  # Note: a 'u_' prefix indicates a user-inputted value
-  local -i 10 u_debug=0     # [bool] debug mode (implies verbose)
-  local -i 10 u_verbose=0   # [bool] verbose mode
-  local -i 10 u_text_mode=0 # [bool] show just text instead of columns
-  local -i 10 u_columns=32  # width for column mode (≈ xxd -c)
-  local -i 10 u_zero_pad=2  # how many 0s to add
-  local u_esc_chars=''      # which set of esc chars to use. the options are:
-  #                         #   unicode    c    caret    cdash    none
+  while { getopts ':DdvtCw:0:e:' opt; } {
 
-  while { getopts 'DdvtCc:0:e:' opt; } {
+    if (( u_debug )) {  
+      echo "${(r:40::─:)}"
+      echo "opt  ==  '$opt'"
+      echo "arg  ==  '$OPTARG'"
+    }
+  
     case "$opt" {
-      [Dd]) u_debug=1 u_verbose=1 ;; # early-(D)ebug/(d)ebug [implies -v]
-      v) u_verbose=1              ;; # (v)erbose
-      t) u_text_mode=1            ;; # (t)ext  mode  [↓ opposites]
-      C) u_text_mode=0            ;; # (C)olumn mode [↑ opposites]
-      c) u_columns="$OPTARG"      ;; # number of (c)olumns [column mode only]
-      0) u_zero_pad="$OPTARG"     ;; # hex (0)-padding     [column mode only]
-      e) u_esc_chars="$OPTARG"    ;; # (e)scape charset to use
+    [Dd]) u_debug=1 u_verbose=1 ;;
+      v ) u_verbose=1           ;;
+      t ) u_text_mode=1         ;;
+      C ) u_text_mode=0         ;;
+      w ) u_width="$OPTARG"     ;;
+      0 ) u_zero_pad="$OPTARG"  ;;
+      e ) u_esc_chars="$OPTARG" ;;
+      h ) usage; return 0       ;;
+      * )
+        echo -n $'\e[31m'
+        if [[ "$opt" == '?' ]] { echo "$0: bad option: -$OPTARG" >&2; } \
+        else { echo "$0: -$OPTARG requires an argument" >&2; }  # $opt = ':'
+        echo -n $'\e[0m'
+        
+        usage; return 1
+        ;;
+    }
+
+    if (( u_debug )) {
+      echo -n "\e[32m-$opt"
+      if [[ -n "$OPTARG" ]] echo -n " ${(qq)OPTARG}"
+      echo ' is a valid input\e[0m'
     }
   }
 
@@ -164,7 +180,7 @@ see() {
   # final newline, since text mode is using `echo -n`
   if (( u_text_mode )) echo
   if (( u_debug     )) set +x
-  if (( u_verbose   )) line
+  if (( u_verbose   )) see::line
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
@@ -191,13 +207,87 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-# this function's down here for now
-#  so I can get a more accurate line number during errors
-line() { echo ${(r:$COLUMNS::─:)}; };
+
+see::parse_opts() {
+  # local -rA _opts_AArr=( "$@" )
+
+  # echo "$_opts_AArr"
+
+
+  # # Note: a 'u_' prefix indicates a user-inputted value
+  # local -i 10 u_debug=0     # [bool] debug mode (implies verbose)
+  # local -i 10 u_verbose=0   # [bool] verbose mode
+  # local -i 10 u_text_mode=0 # [bool] show just text instead of columns
+  # local -i 10 u_width=32    # width for column mode (≈ xxd -c)
+  # local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
+  # local u_esc_chars=''      # which set of esc chars to use. the options are:
+  # #                         #   unicode    c    caret    cdash    none
+  #   
+  # local -rA _options=(
+  #   [D]='0;1;-;*;0;early [D]ebug mode'
+  #   [d]='0;0;-;*;0;[d]ebug mode'
+  #   [v]='0;1;-;*;0;[v]erbose output'
+  #   [t]='0;1;-;C;0;[t]ext-only mode'
+  #   [C]='0;1;-;t;1;[C]olumn mode'
+  #   [w]='1;0;i;t;32;output [w]idth'
+  #   [0]='1;0;i;t;2;hex [0]-padding length'
+  #   [e]='1;0;l;t;unicode;[e]scape charset;unicode,c,caret,cdash,none'
+  #   [h]='0;0;-;-;-;[h]elp'
+  #   #0   1 2 3 4   5.&.6...............  7.....
+  #   # 0 - option character
+  #   # 1 - takes input?
+  #   # 2 - accepts `+`?
+  #   # 3 - arg type
+  #   #     - 'i'=int, 's'=str, 'l'=literal, '-'=n/a
+  #   # 4 - does not work with
+  #   #     - '*'=works w everything, '-'=works w nothing
+  #   # 5 - default value
+  #   #     - '-'=n/a
+  #   # 6 - descriptive name
+  #   # 7 - legal values (literals only)
+  #   #     - comma-delimited
+  # )
+
+  # while { getopts ':DdvtCw:0:e:' opt; } {
+  # 
+  #   echo "${(r:40::─:)}"
+  #   echo "opt  ==  '$opt'"
+  #   echo "arg  ==  '$OPTARG'"
+  # 
+  #   case "$opt" {
+  #   [Dd]) u_debug=1 u_verbose=1 ;;
+  #     v ) u_verbose=1           ;;
+  #     t ) u_text_mode=1         ;;
+  #     C ) u_text_mode=0         ;;
+  #     w ) u_width="$OPTARG"     ;;
+  #     0 ) u_zero_pad="$OPTARG"  ;;
+  #     e ) u_esc_chars="$OPTARG" ;;
+  #     h ) usage; return 0       ;;
+  #     * )
+  #       echo -n $'\e[31m'
+  #       if [[ "$opt" == '?' ]] { echo "$0: bad option: -$OPTARG" >&2; } \
+  #       else { echo "$0: -$OPTARG requires an argument" >&2; }  # $opt = ':'
+  #       echo -n $'\e[0m'
+  # 
+  #       continue
+  #       # usage
+  #       # return 1
+  #       ;;
+  #   }
+  #   if (( u_debug )) {
+  #     echo -n "\e[32m-$opt"
+  #     if [[ -n "$OPTARG" ]] echo -n " ${(qq)OPTARG}"
+  #     echo ' is a valid input\e[0m'
+  #   }
+  # }
+
+}
+
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-# spell-checker:ignore cdash
-# spell-checker:ignoreRegExp /(?<=(^|\s)#.*\(.\))\w+/g
-# spell-checker:ignoreRegExp /(?<=getopts) '[^']+'/g
-# spell-checker:ignoreRegExp /\\(e|033|x1b)\[[0-9;]+?m\B/g
+# spell:ignore cdash
+
+# spell:ignoreRegexp /(?<=(^|\s)#.*\(.\)|\[.\])\w+/g
+# spell:ignoreRegexp /(?<=getopts) '[^']+'/g
+# spell:ignoreRegexp /\\(e|033|x1b)\[[0-9;]+?m\B/g
