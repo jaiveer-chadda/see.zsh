@@ -71,6 +71,15 @@ see() {
 
   # — User Input ——————————————————————————————————————————————————————————— #
 
+  # # Note: a 'u_' prefix indicates a user-inputted value
+  local -i 10 u_debug=0     # [bool] debug mode (implies verbose)
+  local -i 10 u_verbose=0   # [bool] verbose mode
+  local -i 10 u_text_mode=0 # [bool] show just text instead of columns
+  local -i 10 u_width=32    # width for column mode (≈ xxd -c)
+  local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
+  local u_esc_chars=''      # which set of esc chars to use. the options are:
+  #                         #   unicode    c    caret    cdash    none
+
   while { getopts ':DdvtCw:0:e:' opt; } {
 
     if (( u_debug )) {  
