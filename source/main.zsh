@@ -1,7 +1,71 @@
 #!/usr/bin/env zsh
 
+# — TODO ———————————————————————————————————————————————————————————————————— #
+
+# Features
+# ‾‾‾‾‾‾‾‾
+# - implement a different highlight for different kinds of characters:
+#   - e.g. they could be:
+#     - ASCII Chars            -¬ white (i.e. no colour)
+#     - 4 digit unicode values -¬ green
+#     - 5 digit unicode values -¬ purple or smth idk
+#     - control chars          -¬ as they currently are?
+#
+# - add a way to group escape sequences together
+#   - i.e. show the user that, eg:
+#     - `\e[31m` is all part of one "group" (if ykwim)
+#   - and if they're colour escapes, maybe colour them as well...?
+#     - tho tbh I'm unsure about this one, cos it might visually interfere
+#        with all the other colours we've got going on
+
+# Semantics / Syntax
+# ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+# - check if/when we need to strip the final newline from the input
+#   - cos it's honestly rly confused me, so I think I'm gonna need to do
+#      some proper testing
+#
+# - maybe standardise the colour names, like with the esc chars
+#
+# - either finish making see::parse_opts or delete it
+#   - cos looking back, yeah, it's a bit over-done
+#
+# - maybe find a better way to store the escape character sets
+#    cos they're a bit all over the place atm
+#   - also, the `C` esc chars don't include all invisible chars,
+#      so I'll need a backup
+#
+# - move see::line into just being a constant
+#   - I don't think there's any need for it to be its own function
+#
+# - add a few more comments to everything
+#   - especially the new stuff
+
+# To Finish
+# ‾‾‾‾‾‾‾‾‾
+# - implement the usage of the `-c` flag
+# - create a proper verbose `-v` mode
+# - make an actual usage/`-h` message
+
+# New Modes / Flags
+# ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+# - add a flag to customise the character colours, or to just turn them off
+#
+# - make a multi-column mode, kinda like `xxd`'s
+#   - or just turn the current column mode into that mode
+#      and hide the current one away behind an obscure flag
+#   - id have to find a way to properly and nicely
+#      mark multibye characters in this mode tho
+#
+# - add a flag to change how the space char ␣ is displayed
+#   - i.e. which one is used, if any at all
+
+
+# ——————————————————————————————————————————————————————————————————————————— #
+
 see::line()  { echo ${(r:$COLUMNS::─:)}; };
 see::usage() { echo 'Usage: ...'; }
+
+# ——————————————————————————————————————————————————————————————————————————— #
 
 see() {
 
@@ -26,7 +90,6 @@ see() {
   local -r _SP_0x='20'
 
   local -r _reset=$'\e[0m'
-
   local -r       _c_blue="$_reset"$'\e[38;5;033;48;5;236m'
   local -r  _unicode_red="$_reset"$'\e[38;5;231;48;5;088m'
   local -r _caret_yellow="$_reset"$'\e[38;5;226;48;5;018m'
@@ -71,7 +134,7 @@ see() {
 
   # — User Input ——————————————————————————————————————————————————————————— #
 
-  # # Note: a 'u_' prefix indicates a user-inputted value
+  # Note: a 'u_' prefix indicates a user-inputted value
   local -i 10 u_debug=0     # [bool] debug mode (implies verbose)
   local -i 10 u_verbose=0   # [bool] verbose mode
   local -i 10 u_text_mode=0 # [bool] show just text instead of columns
@@ -102,7 +165,6 @@ see() {
         if [[ "$opt" == '?' ]] { echo "$0: bad option: -$OPTARG" >&2; } \
         else { echo "$0: -$OPTARG requires an argument" >&2; }  # $opt = ':'
         echo -n $'\e[0m'
-        
         usage; return 1
         ;;
     }
@@ -223,10 +285,10 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
 
 see::parse_opts() {
   # local -rA _opts_AArr=( "$@" )
-
+  #
   # echo "$_opts_AArr"
-
-
+  #
+  #
   # # Note: a 'u_' prefix indicates a user-inputted value
   # local -i 10 u_debug=0     # [bool] debug mode (implies verbose)
   # local -i 10 u_verbose=0   # [bool] verbose mode
@@ -260,7 +322,7 @@ see::parse_opts() {
   #   # 7 - legal values (literals only)
   #   #     - comma-delimited
   # )
-
+  #
   # while { getopts ':DdvtCw:0:e:' opt; } {
   # 
   #   echo "${(r:40::─:)}"
@@ -293,7 +355,7 @@ see::parse_opts() {
   #     echo ' is a valid input\e[0m'
   #   }
   # }
-
+  #
 }
 
 
