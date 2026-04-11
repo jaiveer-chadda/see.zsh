@@ -169,15 +169,17 @@ see() {
     if (( $#hex < u_zero_pad )) hex="${(l:$u_zero_pad::0:)hex}"
 
     # always print the char itself
-    echo -n "$char"
+    # note: printf is used here cos `echo` doesn't accept the `--` syntax
+    #   so `echo` would ignore $char if it was a hyphen
+    printf -- "$char"
     # and then if we're in column mode,
     #  print the hex code, separator, and a newline
     # also, make the hex code uppercase, and left-pad it with 5 spaces
     if ! (( u_text_mode )) echo "  :  ${(Ul:5:: :)hex}"
     # Note: when printing, make  ↑ sure a non-escapable char
-    #  comes after it, or a backslash will mangle it
+    #  comes after it, or it'll be mangled if $char is a backslash
   }
-  # final newline, since text mode is using `echo -n`
+  # final newline, since text mode is using `printf [-n]`
   if (( u_text_mode )) echo
   if (( u_debug     )) set +x
   if (( u_verbose   )) see::line
@@ -192,13 +194,15 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
 
   # echo -n "this is a normal•str" | see "$@"
 
-  echo -n $'this?→\x00, it\'s a\nlong•"str" 🖮\a␤ \\ 𱌮' | see "$@"
+  # echo -n $'this?→\x00, it\'s a\nlong•"str" 🖮\a␤ \\ 𱌮' | see "$@"
 
   # echo -n $'str w \x0 a\nnl' | see "$@"
 
   # echo -n $'\\\a\b\e\f\n\r\t\v' | see "$@"
 
   # echo $'test \e[31mstr\e[0m' | see "$@"
+
+  echo $'test ---- str\e[0m' | see "$@"
 
   # cat $0 | see "$@"
 
