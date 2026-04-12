@@ -193,7 +193,7 @@ see() {
   # then pass that input by name (P) into the
   #  assoc array that's gonna be used for displaying chars
   local -rA esc_chars=( "${(@Pkv)_charset_name}" )
-
+  local -r esc_col="${esc_chars[esc_col]}"
   # read input from stdin, and append a newline to each line
   # note: the `|| [[ -n ...` section allows the last line to be read
   #  if the input doesn't end with a newline
@@ -211,15 +211,23 @@ see() {
 
   # split input at every !!codepoint!!
   #  - i.e. it recognises multi-byte characters
-  local -ra chars=( "${(@s::)input}" )
+  # also, replace all spaces with the space repr
+  local -ra chars=(
+    "${(@)${(s::)input}//$_SP/$_space_repr}"
+  )
+  # local k v
+  # for k v in "${(@kv)esc_chars}"; {
+  #   chars=( "${(@)chars//$k/$esc_col$v$_reset}" )
+  # }
 
   # - take every char and prepend it with a quote: `'`
   # - then use printf to convert each char to hex,
   #   - adding a newline between each hex value
   # - then split the result by newlines (f), and assign it to an arr
-  local -ra hexes=(
-    ${(f)"$( printf '%x\n' \'${^chars} )"}
+  local -a hexes=(
+    "${(@f)"$( printf '%x\n' \'${^chars} )"}"
   )
+  
   # zip $chars and $hexes together
   local -ra result=( "${(@)chars:^hexes}" )
 
@@ -229,10 +237,9 @@ see() {
   for char hex in "${(@)result}"; {
     # if we're in text mode, and char is a newline (0x0a),
     #  print a newline (`echo`) for legibility
-    if [[ "$u_text_mode" && "${(L)hex}" == "$_NL_0x" ]] echo
+    if (( "$u_text_mode" )) && [[ "${(L)hex}" == "$_NL_0x" ]] echo
 
     # replace all chars with their special representations, if applicable
-    if [[ "$char" == "$_SP" ]] char="$_space_repr"
     if [[ "${esc_chars[(Ie)$char]}" ]] \
       char="${esc_chars[esc_col]}${esc_chars[$char]}$_reset"
 
@@ -242,7 +249,7 @@ see() {
     # always print the char itself
     # note: this syntax seemed like the only thing that works with both when
     #  $char is a hyphen, and when its a percent sign
-    printf -- '%s' $char
+    printf -- '%s' "$char"
     # and then if we're in column mode,
     #  print the hex code, separator, and a newline
     # also, make the hex code uppercase, and left-pad it with 5 spaces
@@ -264,18 +271,18 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
   # clear
 
   # echo -n "this is a normal•str" | see "$@"
-  # see::line
-  # echo -n $'this?→\x00, it\'s %%a\nlong•"str"-🖮\a␤ \\ 𱌮' | see "$@"
-  # see::line
-  # echo -n $'str w \x0 a\nnl' | see "$@"
-  # see::line
-  # echo -n $'\\\a\b\e\f\n\r\t\v' | see "$@"
-  # see::line
-  # echo $'test \e[31mstr\e[0m' | see "$@"
-  # see::line
-  # echo $'test ---- str\e[0m' | see "$@"
-  # see::line
-  cat $0 | see "$@"
+  see::line
+  echo -n $'this?→\x00, it\'s %%a\nlong•"str"-🖮\a␤ \\ 𱌮' | see "$@"
+  see::line
+  echo -n $'str w \x0 a\nnl' | see "$@"
+  see::line
+  echo -n $'\\\a\b\e\f\n\r\t\v' | see "$@"
+  see::line
+  echo $'test \e[31mstr\e[0m' | see "$@"
+  see::line
+  echo $'test ---- str\e[0m' | see "$@"
+  see::line
+  # cat $0 | see "$@"
 
   # cat ../resources/control_chars.txt | see "$@"
 }
