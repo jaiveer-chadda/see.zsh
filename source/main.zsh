@@ -240,9 +240,9 @@ see() {
     if (( $#hex < u_zero_pad )) hex="${(l:$u_zero_pad::0:)hex}"
 
     # always print the char itself
-    # note: printf is used here cos `echo` doesn't accept the `--` syntax
-    #   so `echo` would ignore $char if it was a hyphen
-    printf -- "$char"
+    # note: this syntax seemed like the only thing that works with both when
+    #  $char is a hyphen, and when its a percent sign
+    printf -- '%s' $char
     # and then if we're in column mode,
     #  print the hex code, separator, and a newline
     # also, make the hex code uppercase, and left-pad it with 5 spaces
@@ -264,18 +264,18 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
   # clear
 
   # echo -n "this is a normal•str" | see "$@"
-
-  # echo -n $'this?→\x00, it\'s a\nlong•"str" 🖮\a␤ \\ 𱌮' | see "$@"
-
+  # see::line
+  # echo -n $'this?→\x00, it\'s %%a\nlong•"str"-🖮\a␤ \\ 𱌮' | see "$@"
+  # see::line
   # echo -n $'str w \x0 a\nnl' | see "$@"
-
+  # see::line
   # echo -n $'\\\a\b\e\f\n\r\t\v' | see "$@"
-
+  # see::line
   # echo $'test \e[31mstr\e[0m' | see "$@"
-
-  echo $'test ---- str\e[0m' | see "$@"
-
-  # cat $0 | see "$@"
+  # see::line
+  # echo $'test ---- str\e[0m' | see "$@"
+  # see::line
+  cat $0 | see "$@"
 
   # cat ../resources/control_chars.txt | see "$@"
 }
