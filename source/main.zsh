@@ -62,8 +62,101 @@
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-see::line()  { echo ${(r:$COLUMNS::─:)}; };
-see::usage() { echo 'Usage: ...'; }
+see::usage() {
+  local -r r=$'\e[0m' off=$'\e[39m' b=$'\e[1m' b0=$'\e[22m' \
+    red=$'\e[31m' yel=$'\e[33m' lgr=$'\e[92m' grn=$'\e[32m' lbl=$'\e[94m' \
+    blu=$'\e[34m' mag=$'\e[35m'
+
+  local -r __="$yel  -$r"
+  local -r opt="$r <$grn"
+  local -r pad="${(r:8:)}"
+  local -r comma="$r, $red"
+  local -r arrow="$r $blu-->$r "
+  local -r pipe="$grn... $yel|$r"
+  local -r opt_format="${opt}format$r>"
+  local -r charset="$comma--charset${opt}charset$r>"
+  local -r not_imp=$'\e[91m '"$b< X >$r"
+  local -r eg1=$'\e[32m' eg2=$'\e[1;31m' eg3=$'\e[44;30m'
+  local -r coloour="--${b}c${b0}olo${r}[${red}u$r]${red}r"
+  local -r file="( $red-f$r | $red--file$r )${opt}file$r>"
+
+  local -r _cs="$r"$'\e[1;38;5;033;48;5;236m'
+  local -r _uc="$r"$'\e[1;38;5;231;48;5;088m'
+  local -r _cr="$r"$'\e[1;38;5;226;48;5;018m'
+
+  local -r    __file="$red-f$comma--${b}f${b0}ile${opt}file$r>"
+  local -r    __text="$red-t$comma--${b}t${b0}ext$r"
+  local -r    __list="$red-l$comma--${b}l${b0}ist$r"
+  local -r    __mode="$red-m$comma--${b}m${b0}ode${opt}mode$r>"
+  local -r  __colour="$red-c$comma$coloour${opt}when$r>"
+  local -r __colours="$red-C$comma${coloour}s$opt_format"
+  local -r  __escape="$red-e$comma--${b}e${b0}scapes$charset"
+  local -r   __width="$red-w$comma--${b}w${b0}idth${opt}num$r>"
+  local -r  __zeroes="$red-0$comma--zeroes${opt}num$r>"
+  local -r  __edebug="$red-D$comma$r"
+  local -r   __debug="$red-d$comma--${b}d${b0}ebug$r"
+  local -r __verbose="$red-v$comma--${b}v${b0}erbose$r"
+  local -r    __help="$red-h$comma--${b}h${b0}elp$r"
+
+  cat << EOF >&2
+${r}Usage:
+$pipe$red see$r [$grn OPTIONS $r]
+     $red see$r [$grn OPTIONS $r] [$grn FILE ... $r]
+     $red see$r [$grn OPTIONS $r] $file $not_imp
+     $red see$r $file [$grn OPTIONS $r] $not_imp
+
+Display text from a file or stdin, and highlight all non-printable characters.
+
+  $__file $not_imp
+  $pad  The file to be read in and $lbl'seen'$r
+
+  $__mode $not_imp
+  $pad  Set the output mode
+  $pad      Possible values:
+  $pad      $__ text $b(default$off)$r
+  $pad      $__ list
+
+  $__text    Set output to text mode (shorthand for $red--mode$grn text$r)
+  $__list    Set output to list mode (shorthand for $red--mode$grn list$r)
+
+  $__colour
+  $pad  When to display colours in the output
+  $pad      Possible values:
+  $pad      $__ always
+  $pad      $__ $mag*${r}auto$mag*$r $b(default$off)$r
+  $pad      $__ never
+
+  $__colours $not_imp
+  $pad  Which colours to use for specific characters
+  $pad      Example: $lgr'1B 32  0A 33;45  0 44;1'$r
+  $pad      $__ $lgr'1B 32'   $arrow\U1B : green fg         $arrow$eg1␛$r
+  $pad      $__ $lgr'0A 1;31' $arrow\U0A : bold, red bg     $arrow$eg2␊$r
+  $pad      $__ $lgr'0  44;30'$arrow\U00 : black fg, blue bg$arrow$eg3␀$r
+  $pad      Note: consecutive spaces in$opt_format are ignored
+
+  $__escape
+  $pad  Which charset to display non-printable characters with
+  $pad      Possible values:
+  $pad      $__ none
+  $pad      $__ unicode     $_uc␀$r    $_uc␊$r    $_uc␛$r $b(default)$r
+  $pad      $__ c          $_cs\0$r   $_cs\n$r   $_cs\e$r
+  $pad      $__ caret      $_cr^@$r   $_cr^J$r   $_cr^[$r
+  $pad      $__ cdash    \C-@$r \C-J$r \C-[$r $not_imp
+  $pad      $__ hex      0x00$r 0x0A$r 0x1B$r $not_imp
+  $pad      $__ uni_esc  \u00$r \u0A$r \u1B$r $not_imp
+
+  $__width
+  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
+  $__zeroes
+  $pad  Number of zeroes to pad hex codes with $b(default:$yel 2$off)$r
+
+  $__edebug $pad Set early  debug mode (implies $red-v$r and $red-d$r)
+  $__debug   Set normal debug mode (implies $red-v$r)
+  $__verbose Set verbose mode
+
+  $__help    Show this help message
+EOF
+}
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
