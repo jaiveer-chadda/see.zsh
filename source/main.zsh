@@ -182,15 +182,16 @@ see() {
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
-  local _reset=$'\e[0m'
+  local -r _reset=$'\e[0m'
   local -r _unicode_colour="$_reset"$'\e[1;38;5;231;48;5;088m'
   local -r _c_style_colour="$_reset"$'\e[1;38;5;033;48;5;236m'
   local -r   _caret_colour="$_reset"$'\e[1;38;5;226;48;5;018m'
 
-  local -r _SP_char='·'  # '␣' / '·' / '␠' / ' '
   local -r _SP_colour=$'\e[49;1;38;5;033m'
-  # local -r _NL_colour=$'\e[39;1;48;5;026m'
-  local -r _NL_colour=$'\e[49;1;33m'
+  local -r _NL_colour=$'\e[49;1;33m'  # $'\e[39;1;48;5;026m'
+
+  local -r _SP_char='·'  # '␣' / '·' / '␠' / ' '
+  local -r _NL_hex_code='a'
 
   local -r _line="${(r:$COLUMNS::─:)}"
 
@@ -334,6 +335,7 @@ see() {
   }
 
   # Text mode needs an newline for legibility
+  #  Although, this newline won't be shown if it's the last char of the file
   if [[ "$u_mode" == 'text' ]] esc_chars[$_NL]+="$_NL"
 
   # ————————————————————————————————————————————————————————————————————————— #
@@ -394,8 +396,8 @@ see() {
     # add a left padding to the hex chars which need it
     if (( $#hex < u_zero_pad )) hex="${(l:$u_zero_pad::0:)hex}"
 
-    #  print the hex code, separator, and a newline
-    # also, make the hex code uppercase, and left-pad it with 5 spaces
+    # print the hex code, separator, and a newline
+    #  also, make the hex code uppercase, and left-pad it with 5 spaces
     if [[ "$u_mode" == 'list' ]] \
       echo "  :  ${(Ul:5:: :)hex}"
     # Note: when printing, make sure a non-escapable char
@@ -403,10 +405,13 @@ see() {
   }
 
   # —— Final Cleanup ——————————————————————————— #
-  # final newline, since text mode is using `printf [-n]`
-  if [[ "$u_mode" == 'text' ]] echo
-  if (( u_debug             )) set +x
-  if (( u_verbose           )) echo $_line
+  # print a final newline if we're in text mode, and if the last char of the
+  #  text wasn't already a newline.
+  # (this is since we're using printf, which doesn't use trailing newlines)
+  if [[ "$u_mode" == 'text' && "${(L)hex/#0#}" != "$_NL_hex_code" ]] echo
+
+  if (( u_debug   )) set +x
+  if (( u_verbose )) echo $_line
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
@@ -417,12 +422,16 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
   local -r _line="${(r:$COLUMNS::─:)}"
   clear; echo $_line
 
-  echo -n "this is a normal•str"                  | see "$@"; echo "\n$_line"
-  echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; echo "\n$_line"
-  echo -n $'str w \x0 a\nnewline'                 | see "$@"; echo "\n$_line"
-  echo -n $'\\\a\b\e\f\n\r\t\v\''                 | see "$@"; echo "\n$_line"
-  echo $'test \e[31mstr\e[0m'                     | see "$@"; echo "\n$_line"
-  echo $'test ---- str\e[0m'                      | see "$@"; echo "\n$_line"
+  echo -n "this is a normal•str"                  | see "$@"; echo "$_line"
+  echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; echo "$_line"
+  echo -n $'str w \x0 a\nnewline'                 | see "$@"; echo "$_line"
+  echo -n $'\\\a\b\e\f\n\r\t\v\''                 | see "$@"; echo "$_line"
+  echo "this is a normal•str"                     | see "$@"; echo "$_line"
+  echo $'this?→\x00, its %s\nlong•"str"-\a␤\\'    | see "$@"; echo "$_line"
+  echo $'str w \x0 a\nnewline'                    | see "$@"; echo "$_line"
+  echo $'\\\a\b\e\f\n\r\t\v\''                    | see "$@"; echo "$_line"
+  echo $'test \e[31mstr\e[0m'                     | see "$@"; echo "$_line"
+  echo $'test ---- str\e[0m'                      | see "$@"; echo "$_line"
 
   # cat ../resources/control_chars.txt              | see "$@"; echo $_line
   # cat $0 | head -n 301 | tail -n $(( LINES - 3 )) | see "$@"; echo $_line
