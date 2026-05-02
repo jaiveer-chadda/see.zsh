@@ -160,6 +160,7 @@ Display text from a file or stdin, and highlight all non-printable characters.
   $__verbose Set verbose mode
 
   $__help    Show this help message
+
 EOF
 }
 
@@ -187,11 +188,13 @@ see() {
   local -r _c_style_colour="$_reset"$'\e[1;38;5;033;48;5;236m'
   local -r   _caret_colour="$_reset"$'\e[1;38;5;226;48;5;018m'
 
-  local -r _SP_colour=$'\e[49;1;38;5;033m'
-  local -r _NL_colour=$'\e[49;1;33m'  # $'\e[39;1;48;5;026m'
+  local -r   _MB_colour=$'\e[49;1;31m'
+  local -r   _SP_colour=$'\e[49;1;38;5;033m'
+  local -r _CRLF_colour=$'\e[49;1;33m'  # $'\e[39;1;48;5;026m'
 
   local -r _SP_char='·'  # '␣' / '·' / '␠' / ' '
   local -r _NL_hex_code='a'
+  local -r _CR_hex_code='d'
 
   local -r _line="${(r:$COLUMNS::─:)}"
 
@@ -199,9 +202,9 @@ see() {
   )
   local -rA _c_esc_chars=(
     [esc_col]="$_c_style_colour"
-    [$'\u00']='\\0' [$'\u07']='\\a' [$'\u08']='\\b' [$'\u09']='\\t'
-    [$'\u0A']='\\n' [$'\u0B']='\\v' [$'\u0C']='\\f' [$'\u0D']='\\r'
-    [$'\u1B']='\\e'
+    [$'\u00']='\0' [$'\u07']='\a' [$'\u08']='\b' [$'\u09']='\t'
+    [$'\u0A']='\n' [$'\u0B']='\v' [$'\u0C']='\f' [$'\u0D']='\r'
+    [$'\u1B']='\e'
   )
   local -rA _unicode_esc_chars=(
     [esc_col]="$_unicode_colour"
@@ -299,7 +302,7 @@ see() {
     set -x
   }
 
-  # —— Set Colours & Special Chars (SP/NL) ————— #
+  # —— Set Colours & Special Chars (SP/NL/CR) —— #
 
   local -i 2 do_colours=0
   case "$u_do_colours" {
@@ -321,7 +324,7 @@ see() {
 
   # ———————————————————————————————————————————— #
 
-  local -r _NL=$'\n' _SP=' '
+  local -r _NL=$'\n' _CR=$'\r' _SP=' '
   local esc_col= reset=
 
   esc_chars[$_SP]="$_SP_char"
@@ -331,8 +334,9 @@ see() {
     # You have to pass the space and newline in as variables, otherwise
     #  zsh can't process the keys
     esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
-    esc_chars[$_NL]="$_NL_colour${esc_chars[$_NL]}$_reset"
-  }
+    esc_chars[$_NL]="$_CRLF_colour${esc_chars[$_NL]}$_reset"
+    esc_chars[$_CR]="$_CRLF_colour${esc_chars[$_CR]}$_reset"
+  } else { _MB_colour= ; }
 
   # Text mode needs an newline for legibility
   #  Although, this newline won't be shown if it's the last char of the file
@@ -384,15 +388,18 @@ see() {
       char="$esc_col${esc_chars[$char]}$reset"
 
     # —— Print Char ———————————————————————————— #
-    # always print the char itself
-    # note: this syntax seemed like the only thing that works with both when
-    #  `$char` is a hyphen `-`, and when its a percent sign `%`
-    printf -- '%s' "$char"
-
-    # if we're in text mode, there's no more processing to do`
-    if [[ "$u_mode" == 'text' ]] continue
+    if [[ "$u_mode" == 'text' ]] {
+      if (( $#hex > 2 )) echo -n "$_MB_colour"
+      # note: this syntax seemed like the only thing that works with both when
+      #  `$char` is a hyphen `-`, and when its a percent sign `%`
+      printf -- '%s' "$char$reset"
+      continue
+      # if we're in text mode, there's no more processing to do`
+    }
 
     # —— Column Mode Processing ———————————————— #
+    printf -- '%s' "$char"
+
     # add a left padding to the hex chars which need it
     if (( $#hex < u_zero_pad )) hex="${(l:$u_zero_pad::0:)hex}"
 
