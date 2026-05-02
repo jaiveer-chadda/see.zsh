@@ -2,8 +2,9 @@
 
 line_() { echo "${(r:$COLUMNS::─:)}"; }
 
-() {
-  local -r orig_text="$( command timeout --help | head )"
+# Note: not really a viable function; just a proof of concept
+from_od fod () {
+  local -r orig_text="${$( cat; echo '.' )%.}"
   local -r od_out="$( echo -nE "$orig_text" | od -a )"
 
   local -ra chars=( ${(@s: :)${(@f)od_out%$'\n'*}#* } )
@@ -23,8 +24,12 @@ line_() { echo "${(r:$COLUMNS::─:)}"; }
   #  but not elems that start with `\e`, cos those are our formatted chars
   formatted=( "${(@*)formatted:/(#b)([^$'\e']?##)/$UNK$match[1]$rst}" )
 
-  echo "$orig_text"        ; line_
-  echo "$chars"            ; line_
-  echo "$formatted"        ; line_
-  echo "${(j::)formatted}" ; line_
+  # echo "$orig_text"        ; line_
+  # echo "$chars"            ; line_
+  # echo "$formatted"        ; line_
+  echo -n "${(j::)formatted}" # ; line_
+}
+
+if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
+  timeout --help | head | from_od
 }
