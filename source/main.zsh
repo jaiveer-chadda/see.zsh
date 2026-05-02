@@ -2,21 +2,8 @@
 
 # — TODO ———————————————————————————————————————————————————————————————————— #
 
-# BUGS
-# ‾‾‾‾
-# - For some reason the input I'm getting seems to have all the leading spaces
-#    stripped out.
-#   - I'll have to check out what's causing the issue
-
 # Features
 # ‾‾‾‾‾‾‾‾
-# - implement a different highlight for different kinds of characters:
-#   - e.g. they could be:
-#     - ASCII Chars            -¬ white (i.e. no colour)
-#     - 4 digit unicode values -¬ green
-#     - 5 digit unicode values -¬ purple or smth idk
-#     - control chars          -¬ as they currently are?
-#
 # - add a way to group escape sequences together
 #   - i.e. show the user that, eg:
 #     - `\e[31m` is all part of one "group" (if ykwim)
@@ -26,31 +13,16 @@
 
 # Semantics / Syntax
 # ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-# - check if/when we need to strip the final newline from the input
-#   - cos it's honestly rly confused me, so I think I'm gonna need to do
-#      some proper testing
-#
-# - maybe standardise the colour names, like with the esc chars
-#
-# - either finish making see::parse_opts or delete it
-#   - cos looking back, yeah, it's a bit over-done
-#
 # - maybe find a better way to store the escape character sets
 #    cos they're a bit all over the place atm
-#   - also, the `C` esc chars don't include all invisible chars,
-#      so I'll need a backup
 #
-# - move see::line into just being a constant
-#   - I don't think there's any need for it to be its own function
-#
-# - add a few more comments to everything
-#   - especially the new stuff
+# - rework the options loop to be able to use long arguments
+#   - and so I can more specifically customise their behaviour
 
 # To Finish
 # ‾‾‾‾‾‾‾‾‾
-# - implement the usage of the `-l` flag
+# - implement the proper usage of the `-l` flag
 # - create a proper verbose `-v` mode
-# - make an actual usage/`-h` message
 
 # New Modes / Flags
 # ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -68,143 +40,184 @@
 # ——————————————————————————————————————————————————————————————————————————— #
 
 see::usage() {
-  local -r r=$'\e[0m' off=$'\e[39m' b=$'\e[1m' b0=$'\e[22m' \
-    red=$'\e[31m' yel=$'\e[33m' lgr=$'\e[92m' grn=$'\e[32m' lbl=$'\e[94m' \
-    blu=$'\e[34m' mag=$'\e[35m'
+  local -r \
+    off=$'\e[39m' \
+     b0=$'\e[22m' \
+      b=$'\e[1m'  \
+      r=$'\e[m'   \
+    lrd=$'\e[91m' \
+    red=$'\e[31m' \
+    yel=$'\e[33m' \
+    lgr=$'\e[92m' \
+    grn=$'\e[32m' \
+    cyn=$'\e[36m' \
+    lbl=$'\e[94m' \
+    blu=$'\e[34m' \
+    mag=$'\e[35m'
 
-  local -r __="$yel  -$r"
   local -r opt="$r <$grn"
   local -r pad="${(r:8:)}"
+  local -r dash="$yel  -$r"
   local -r comma="$r, $red"
   local -r arrow="$r $blu-->$r "
   local -r pipe="$grn... $yel|$r"
   local -r opt_format="${opt}format$r>"
+  local -r not_imp="$lrd$b [ X ]$r"
+  local -r redirection="$cyn< $mag/dev/stdin $r"
   local -r charset="$comma--charset${opt}charset$r>"
-  local -r not_imp=$'\e[91m '"$b< X >$r"
-  local -r eg1=$'\e[32m' eg2=$'\e[1;31m' eg3=$'\e[44;30m'
-  local -r coloour="--${b}c${b0}olo${r}[${red}u$r]${red}r"
+  local -r eg1="$mag" eg2=$'\e[1;31m' eg3=$'\e[44;30m'
+  local -r colo_u_r="--${b}c${b0}olo${r}[${red}u$r]${red}r"
   local -r file="( $red-f$r | $red--file$r )${opt}file$r>"
 
-  local -r _cs="$r"$'\e[1;38;5;033;48;5;236m'
-  local -r _uc="$r"$'\e[1;38;5;231;48;5;088m'
-  local -r _cr="$r"$'\e[1;38;5;226;48;5;018m'
+  local -r \
+    _cs="$r"$'\e[1;38;5;033;48;5;236m' \
+    _uc="$r"$'\e[1;38;5;231;48;5;088m' \
+    _cr="$r"$'\e[1;38;5;226;48;5;018m'
 
-  local -r    __file="$red-f$comma--${b}f${b0}ile${opt}file$r>"
-  local -r    __text="$red-t$comma--${b}t${b0}ext$r"
-  local -r    __list="$red-l$comma--${b}l${b0}ist$r"
-  local -r    __mode="$red-m$comma--${b}m${b0}ode${opt}mode$r>"
-  local -r  __colour="$red-c$comma$coloour${opt}when$r>"
-  local -r __colours="$red-C$comma${coloour}s$opt_format"
-  local -r  __escape="$red-e$comma--${b}e${b0}scapes$charset"
-  local -r   __width="$red-w$comma--${b}w${b0}idth${opt}num$r>"
-  local -r  __zeroes="$red-0$comma--zeroes${opt}num$r>"
-  local -r  __edebug="$red-D$comma$r"
-  local -r   __debug="$red-d$comma--${b}d${b0}ebug$r"
-  local -r __verbose="$red-v$comma--${b}v${b0}erbose$r"
-  local -r    __help="$red-h$comma--${b}h${b0}elp$r"
+  local -r \
+     __file="$red-f$comma--${b}f${b0}ile${opt}file$r>" \
+     __text="$red-t$comma--${b}t${b0}ext$r"            \
+     __list="$red-l$comma--${b}l${b0}ist$r"            \
+     __mode="$red-m$comma--${b}m${b0}ode${opt}mode$r>" \
+   __colour="$red-c$comma$colo_u_r${opt}when$r>"       \
+  __colours="$red-C$comma${colo_u_r}s$opt_format"      \
+   __escape="$red-e$comma--${b}e${b0}scapes$charset"   \
+    __width="$red-w$comma--${b}w${b0}idth${opt}num$r>" \
+   __zeroes="$red-0$comma--zeroes${opt}num$r>"         \
+   __edebug="$red-D$comma$r"                           \
+    __debug="$red-d$comma--${b}d${b0}ebug$r"           \
+  __verbose="$red-v$comma--${b}v${b0}erbose$r"         \
+     __help="$red-h$comma--${b}h${b0}elp$r"
 
-  cat << EOF >&2
-${r}Usage:
-$pipe$red see$r [$grn OPTIONS $r]
-     $red see$r [$grn OPTIONS $r] [$grn FILE ... $r]
-     $red see$r [$grn OPTIONS $r] $file $not_imp
-     $red see$r $file [$grn OPTIONS $r] $not_imp
+  cat <<- EOF
+	${r}Usage:
+	  $red see$r [$grn OPTIONS $r] $redirection
+	  $red see$r [$grn OPTIONS $r] [$grn FILE ... $r] $not_imp
+	  $red see$r [$grn OPTIONS $r] $file $not_imp
+	  $red see$r $file [$grn OPTIONS $r] $not_imp
 
-Display text from a file or stdin, and highlight all non-printable characters.
+	Print a file or stdin to stdout, highlighting all non-printable characters.
 
-  $__file $not_imp
-  $pad  The file to be read in and $lbl'seen'$r
+	  $__file $not_imp
+	  $pad  The file to be read in and $lbl'seen'$r
 
-  $__mode $not_imp
-  $pad  Set the output mode
-  $pad      Possible values:
-  $pad      $__ text $b(default$off)$r
-  $pad      $__ list
+	  $__mode $not_imp
+	  $pad  Set the output mode
+	  $pad      Possible values:
+	  $pad      $dash text $b(default$off)$r
+	  $pad      $dash list
 
-  $__text    Set output to text mode (shorthand for $red--mode$grn text$r)
-  $__list    Set output to list mode (shorthand for $red--mode$grn list$r)
+	  $__text    Set output to text mode (shorthand for $red--mode$grn text$r)
+	  $__list    Set output to list mode (shorthand for $red--mode$grn list$r)
 
-  $__colour
-  $pad  When to display colours in the output
-  $pad      Possible values:
-  $pad      $__ always
-  $pad      $__ $mag*${r}auto$mag*$r $b(default$off)$r
-  $pad      $__ never
+	  $__colour
+	  $pad  When to display colours in the output
+	  $pad      Possible values:
+	  $pad      $dash always
+	  $pad      $dash $mag*${r}auto$mag*$r $b(default$off)$r
+	  $pad      $dash never
 
-  $__colours $not_imp
-  $pad  Which colours to use for specific characters
-  $pad      Example: $lgr'1B 32  0A 33;45  0 44;1'$r
-  $pad      $__ $lgr'1B 32'   $arrow\U1B : green fg         $arrow$eg1␛$r
-  $pad      $__ $lgr'0A 1;31' $arrow\U0A : bold, red bg     $arrow$eg2␊$r
-  $pad      $__ $lgr'0  44;30'$arrow\U00 : black fg, blue bg$arrow$eg3␀$r
-  $pad      Note: consecutive spaces in$opt_format are ignored
+	  $__colours $not_imp
+	  $pad  Which colours to use for specific characters
+	  $pad      Example: $lgr'1B 32  0A 33;45  0 44;1'$r
+	  $pad      $dash $lgr'1B 35'   $arrow\U1B : magenta fg       $arrow$eg1␛$r
+	  $pad      $dash $lgr'0A 1;31' $arrow\U0A : bold, red bg     $arrow$eg2␊$r
+	  $pad      $dash $lgr'0  44;30'$arrow\U00 : black fg, blue bg$arrow$eg3␀$r
+	  $pad      Note: consecutive spaces in$opt_format are ignored
 
-  $__escape
-  $pad  Which charset to display non-printable characters with
-  $pad      Possible values:
-  $pad      $__ none
-  $pad      $__ unicode     $_uc␀$r    $_uc␊$r    $_uc␛$r $b(default)$r
-  $pad      $__ c          $_cs\0$r   $_cs\n$r   $_cs\e$r
-  $pad      $__ caret      $_cr^@$r   $_cr^J$r   $_cr^[$r
-  $pad      $__ cdash    \C-@$r \C-J$r \C-[$r $not_imp
-  $pad      $__ hex      0x00$r 0x0A$r 0x1B$r $not_imp
-  $pad      $__ uni_esc  \u00$r \u0A$r \u1B$r $not_imp
+	  $__escape
+	  $pad  Which charset to display non-printable characters with
+	  $pad      Possible values:
+	  $pad      $dash none
+	  $pad      $dash unicode     $_uc␀$r    $_uc␊$r    $_uc␛$r $b(default)$r
+	  $pad      $dash c          $_cs\0$r   $_cs\n$r   $_cs\e$r
+	  $pad      $dash caret      $_cr^@$r   $_cr^J$r   $_cr^[$r
+	  $pad      $dash named     NUL   LF  ESC $not_imp
+	  $pad      $dash cdash    \C-@ \C-J \C-[ $not_imp
+	  $pad      $dash hex      0x00 0x0A 0x1B $not_imp
+	  $pad      $dash uni_esc  \u00 \u0A \u1B $not_imp
 
-  $__width
-  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
-  $__zeroes
-  $pad  Number of zeroes to pad hex codes with $b(default:$yel 2$off)$r
+	  $__width
+	  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
+	  $__zeroes
+	  $pad  Number of zeroes to pad hex codes with $b(default:$yel 2$off)$r
 
-  $__edebug $pad Set early  debug mode (implies $red-v$r and $red-d$r)
-  $__debug   Set normal debug mode (implies $red-v$r)
-  $__verbose Set verbose mode
+	  $__edebug $pad Set early  debug mode (implies $red-v$r and $red-d$r)
+	  $__debug   Set normal debug mode (implies $red-v$r)
+	  $__verbose Set verbose mode
 
-  $__help    Show this help message
+	  $__help    Show this help message
 
-EOF
+	EOF
+  return 0
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
 see() {
 
+  # — Debugging Options ———————————————————————————————————————————————————— #
+
+  setopt local_options
+  setopt warn_create_global
+  setopt warn_nested_var
+
   # — Early Debug Mode ————————————————————————————————————————————————————— #
 
   # this is here as a less checked, but earlier activated debug flag
   #  so I can debug the input parsing
-  local -r _CUSTOM_PS4=$'%F{red}+ %N:%I%F{blue}\t>%f '
+  local -r _custom_ps4=$'%F{red}+ %N:%I%F{blue}\t>%f '
 
   # Note that `-D` will act as `-d` if it isn't the sole first argument
   if [[ "$1" == '-D' ]] {
-    echo "${(%)_CUSTOM_PS4}changing \$PS4 locally to '$_CUSTOM_PS4'" >&2
-    local PS4="$_CUSTOM_PS4"
+    echo "${(%)_custom_ps4}changing \$PS4 locally to '$_custom_ps4'" >&2
+    local PS4="$_custom_ps4"
     set -x
   }
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
-  local -r _reset=$'\e[0m'
-  local -r _unicode_colour="$_reset"$'\e[1;38;5;231;48;5;088m'
-  local -r _c_style_colour="$_reset"$'\e[1;38;5;033;48;5;236m'
-  local -r   _caret_colour="$_reset"$'\e[1;38;5;226;48;5;018m'
+  local -r _reset=$'\e[m'
 
-  local -r   _MB_colour=$'\e[49;1;31m'
-  local -r   _SP_colour=$'\e[49;1;38;5;033m'
-  local -r _CRLF_colour=$'\e[49;1;33m'  # $'\e[39;1;48;5;026m'
+  # Generic Escape Character Colours
+  local -r _unicode_colour=$'\e[0;1;38;5;231;48;5;088m'
+  local -r _c_style_colour=$'\e[0;1;38;5;033;48;5;236m'
+  local -r   _caret_colour=$'\e[0;1;38;5;226;48;5;018m'
 
-  local -r _SP_char='·'  # '␣' / '·' / '␠' / ' '
+  # Multibyte Colours
+  local _3B_colour=$'\e[49;1;32m'
+  local _4B_colour=$'\e[49;1;31m'
+  local _5B_colour=$'\e[49;1;35m'
+  local _6B_colour=$'\e[39;1;45m'
+
+  # Whitespace Colours
+  local -r _CRLF_colour=$'\e[49;1;33m'  # $'\e[...;48;5;26m'
+  local -r   _SP_colour=$'\e[49;1;38;5;33m'
+
+  # Whitespace Characters
+  local -r _SP_char='·'  # ␣ / · / ␠ / ' ' #y)TODO
+  #local-r _NL_char='␤'  # ␤ / ␊ / ↩ / ⏎   #y)TODO
+
+  # Hex Codes
   local -r _NL_hex_code='a'
-  local -r _CR_hex_code='d'
 
+  # Visual Aides
   local -r _line="${(r:$COLUMNS::─:)}"
 
+  # All Escape Characters
   local -rA _none_esc_chars=(
   )
   local -rA _c_esc_chars=(
     [esc_col]="$_c_style_colour"
-    [$'\u00']='\0' [$'\u07']='\a' [$'\u08']='\b' [$'\u09']='\t'
-    [$'\u0A']='\n' [$'\u0B']='\v' [$'\u0C']='\f' [$'\u0D']='\r'
-    [$'\u1B']='\e'
+    [$'\u00']='\0'   [$'\u01']='\x01' [$'\u02']='\x02' [$'\u03']='\x02'
+    [$'\u04']='\x04' [$'\u05']='\x05' [$'\u06']='\x06' [$'\u07']='\a'
+    [$'\u08']='\b'   [$'\u09']='\t'   [$'\u0A']='\n'   [$'\u0B']='\v'
+    [$'\u0C']='\f'   [$'\u0D']='\r'   [$'\u0E']='\x0E' [$'\u0F']='\x0E'
+    [$'\u10']='\x10' [$'\u11']='\x11' [$'\u12']='\x12' [$'\u13']='\x12'
+    [$'\u14']='\x14' [$'\u15']='\x15' [$'\u16']='\x16' [$'\u17']='\x16'
+    [$'\u18']='\x18' [$'\u19']='\x19' [$'\u1A']='\x1A' [$'\u1B']='\e'
+    [$'\u1C']='\x1C' [$'\u1D']='\x1D' [$'\u1E']='\x1E' [$'\u1F']='\x1E'
+    [$'\u7F']='\x7F'
   )
   local -rA _unicode_esc_chars=(
     [esc_col]="$_unicode_colour"
@@ -230,11 +243,11 @@ see() {
   # — Take User Input —————————————————————————————————————————————————————— #
 
   # Note: a 'u_' prefix indicates a user-inputted value
-  local u_file=             # not implemented yet
-  local u_mode='text'       # only kinda implemented
+  local u_file=             #y)not implemented yet
+  local u_mode='text'       #y)only kinda implemented
 
-  local u_do_colours='auto' # when to show the colours
-  local u_colours=          # not implemented yet
+  local u_do_colours='auto' # when to show colours
+  local u_colours=          #y)not implemented yet
   local u_esc_chars=''      # default is 'unicode', but that's handled below
 
   local -i 10 u_width=32    # width for column mode (≈ xxd -c)
@@ -248,44 +261,48 @@ see() {
   local opt OPTARG OPTIND
   while { getopts ':f:m:tlc:C:e:w:0:vDdh' opt; } {
     #
-    if (( u_debug )) { echo "${(r:40::─:)}\nopt == '$opt'\narg == '$OPTARG'"; }
+    if (( u_debug )) echo "${(r:40::─:)}\nopt == '$opt'\narg == '$OPTARG'" >&2
     #
     case "$opt" {
       #### File ####
-      f ) u_file="$OPTARG"      ;; # NOT IMPLEMENTED
+      f ) u_file="$OPTARG"      ;; #r)NOT IMPLEMENTED
       #
       #### Modes ####
-      m ) u_mode="$OPTARG"      ;; # not fully implemented
+      m ) u_mode="$OPTARG"      ;; #y)not fully implemented
       t ) u_mode='text'         ;;
       l ) u_mode='list'         ;;
       #
       #### Graphics ####
       c ) u_do_colours="$OPTARG";;
-      C ) u_colours="$OPTARG"   ;; # NOT IMPLEMENTED
+      C ) u_colours="$OPTARG"   ;; #r)NOT IMPLEMENTED
       e ) u_esc_chars="$OPTARG" ;;
       #
       #### Hex Display ####
-      w ) u_width="$OPTARG"     ;; # no effect yet
+      w ) u_width="$OPTARG"     ;; #y)no effect yet
       0 ) u_zero_pad="$OPTARG"  ;;
       #
       #### Internal/Debug ####
-      v ) u_verbose=1           ;; # not fully implemented
+      v ) u_verbose=1           ;; #y)not fully implemented
      D|d) u_debug=1 u_verbose=1 ;;
       #
       #### Usage ####
       h ) see::usage; return 0  ;;
       * )
-        echo -n "$0: bad option: -$OPTARG"                  >&2 # if opt == '?'
-        if [[ "$opt" == ':' ]] echo -n ' needs an argument' >&2 # if opt == ':'
-        if (( ! u_debug )) { echo $'\n' >&2; see::usage; return 1; }
-        echo $'\n\e[1;31m——————— Option Issue ———————\e[0m'
+        {
+          echo -n "$0: bad option: -${(qq)OPTARG}"            # if opt == `?`
+          if [[ "$opt" == ':' ]] echo -n ' needs an argument' # if opt == `:`
+          if (( ! u_debug )) { echo $'\n'; see::usage; return 1; }
+          echo $'\n\e[1;31m——————— Option Issue ———————'"$reset"
+        } >&2
       ;;
     }
     #
     if (( u_debug )) {
-      echo -n $'\e[32m-'"-$opt"
-      if [[ -n "$OPTARG" ]] echo -n " ${(qq)OPTARG}"
-      echo $' is a valid input\e[0m'
+      {
+        echo -n $'\e[32m-'"$opt"
+        if [[ -n "$OPTARG" ]] echo -n " ${(qq)OPTARG}"
+        echo $' is a valid input'"$reset"
+      } >&2
     }
   }
   shift $(( OPTIND - 1 ))
@@ -298,7 +315,7 @@ see() {
     #  - the reasoning behind this is that if $PS4's been changed by the user,
     #    then they probably like it that way.
     #  - but if it hasn't, then we're free to use whichever version we like
-    if [[ "$PS4" == '+%N:%i> ' || "$PS4" == '++' ]] local PS4="$_CUSTOM_PS4"
+    if [[ "$PS4" == '+%N:%i> ' || "$PS4" == '++' ]] local PS4="$_custom_ps4"
     set -x
   }
 
@@ -308,7 +325,7 @@ see() {
   case "$u_do_colours" {
     always ) do_colours=1 ;;
     never  ) do_colours=0 ;;
-    # if stdout `1` is writing to a tty `-t`...
+    # if stdout (`1`) is writing to a tty (`-t`)...
     # i.e. if the output isn't being being piped somewhere
     # then turn colours on
     * ) if [[ -t 1 ]] do_colours=1 ;;
@@ -317,7 +334,7 @@ see() {
   # —— Create Charset —————————————————————————— #
 
   # recreate the esc charset variable name from input
-  local _charset_name="_${(L)u_esc_chars:-unicode}_esc_chars"
+  local -r _charset_name="_${(L)u_esc_chars:-unicode}_esc_chars"
   # then pass that input by name (P) into the
   #  assoc array that's gonna be used for displaying chars
   local -A esc_chars=( "${(@Pkv)_charset_name}" )
@@ -330,13 +347,14 @@ see() {
   esc_chars[$_SP]="$_SP_char"
 
   if (( do_colours )) {
-    esc_col="${esc_chars[esc_col]}"; reset="$_reset"
+    esc_col="${esc_chars[esc_col]}"
+    reset="$_reset"
     # You have to pass the space and newline in as variables, otherwise
     #  zsh can't process the keys
     esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
     esc_chars[$_NL]="$_CRLF_colour${esc_chars[$_NL]}$_reset"
     esc_chars[$_CR]="$_CRLF_colour${esc_chars[$_CR]}$_reset"
-  } else { _MB_colour= ; }
+  }
 
   # Text mode needs an newline for legibility
   #  Although, this newline won't be shown if it's the last char of the file
@@ -376,39 +394,48 @@ see() {
   # ———————————————————————————————————————————————————————————————————————— #
   # — Outputting Results ——————————————————————————————————————————————————— #
 
-  local char hex
   # Even though this looks like associative array syntax, it's not.
   #  I'm iterating through the zipped chars and hexes arrays, so zsh splits
   #  them for me, hence the separate char and hex variables
+  local char hex colour_name
   for char hex in "${(@)result}"; {
 
-    # —— Replace Chars w Reprs ————————————————— #
+    # —— Replace Chars & Print ————————————————— #
     # replace all chars with their special representations, if applicable
+    #y)TODO: check if this if statement is actually doing anything
     if [[ "${esc_chars[(Ie)$char]}" ]] \
       char="$esc_col${esc_chars[$char]}$reset"
 
-    # —— Print Char ———————————————————————————— #
-    if [[ "$u_mode" == 'text' ]] {
-      if (( $#hex > 2 )) echo -n "$_MB_colour"
-      # note: this syntax seemed like the only thing that works with both when
-      #  `$char` is a hyphen `-`, and when its a percent sign `%`
-      printf -- '%s' "$char$reset"
-      continue
-      # if we're in text mode, there's no more processing to do`
+    # if the length of the hex code is more than 2 bits, and colours are on,
+    #  highlight the character its a special colour.
+    if (( $#hex > 2 && do_colours )) {
+      # recreate the name of the variable which stores the colour of the char
+      #  i.e. $_4B_colour for a 4-bit hex code
+      colour_name="_${#hex}B_colour"
+      # then echo pass that colour into the out
+      # note: this syntax seems like the only thing that works with both when
+      #  `$char` is a hyphen (`-`), and when its a percent sign (`%`)
+      printf -- '%s' "${(P)colour_name}$char$reset"
+    } else {
+      # as much as I would love to compress this line down with the one above,
+      #  I feel like this makes a little more sense logically
+      # and means that I only have to use one if statement, rather than 2
+      printf -- '%s' "$char"
     }
 
-    # —— Column Mode Processing ———————————————— #
-    printf -- '%s' "$char"
+    # —— Text Mode ————————————————————————————— #
+    # there's no more processing to do for text mode
+    if [[ "$u_mode" == 'text' ]] continue
 
+    # —— List Mode ————————————————————————————— #
     # add a left padding to the hex chars which need it
     if (( $#hex < u_zero_pad )) hex="${(l:$u_zero_pad::0:)hex}"
 
     # print the hex code, separator, and a newline
     #  also, make the hex code uppercase, and left-pad it with 5 spaces
-    if [[ "$u_mode" == 'list' ]] \
-      echo "  :  ${(Ul:5:: :)hex}"
-    # Note: when printing, make sure a non-escapable char
-    #  comes after it, or it'll be mangled if $char is a backslash
+    #y)TODO: change this so that it checks what the longest hex code is,
+    #y)       and pads it to that length instead
+    echo "  :  ${(Ul:5:: :)hex}"
   }
 
   # —— Final Cleanup ——————————————————————————— #
@@ -426,25 +453,21 @@ see() {
 # if the script's being run directly (i.e. not being sourced), then run tests
 # (this line is equivalent to `if __name__ == "__main__"`)
 if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
-  local -r _line="${(r:$COLUMNS::─:)}"
-  clear; echo $_line
-
+  local -r _line="\e[2m${(r:$COLUMNS::─:)}\e[m"   ; clear   ; echo $_line
   echo -n "this is a normal•str"                  | see "$@"; echo "$_line"
   echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; echo "$_line"
-  echo -n $'str w \x0 a\nnewline'                 | see "$@"; echo "$_line"
-  echo -n $'\\\a\b\e\f\n\r\t\v\''                 | see "$@"; echo "$_line"
-  echo "this is a normal•str"                     | see "$@"; echo "$_line"
+  echo -n $'str w \x0 a\nnewline Δ'               | see "$@"; echo "$_line"
+  echo -n $'\a\b\e\f\r\n\t\v\'\\'                 | see "$@"; echo "$_line"
+  echo $'this isn\'t a \u0014 normal•str'         | see "$@"; echo "$_line"
   echo $'this?→\x00, its %s\nlong•"str"-\a␤\\'    | see "$@"; echo "$_line"
-  echo $'str w \x0 a\nnewline'                    | see "$@"; echo "$_line"
-  echo $'\\\a\b\e\f\n\r\t\v\''                    | see "$@"; echo "$_line"
-  echo $'test \e[31mstr\e[0m'                     | see "$@"; echo "$_line"
-  echo $'test ---- str\e[0m'                      | see "$@"; echo "$_line"
+  echo $'str w \x0 a\nnew 󰟀 󰘵 󱄖  line'            | see "$@"; echo "$_line"
+  echo $'\a\b\e \u0019\f\r\n\t\v\'\\'             | see "$@"; echo "$_line"
+  echo $'test \e[31mstr\e[m'                      | see "$@"; echo "$_line"
+  echo $'test ----   str\e[m'                    | see "$@"; echo "$_line"
 
   # cat ../resources/control_chars.txt              | see "$@"; echo $_line
   # cat $0 | head -n 301 | tail -n $(( LINES - 3 )) | see "$@"; echo $_line
   # cat $0                                          | see "$@"; echo $_line
-
-  # see::usage
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
