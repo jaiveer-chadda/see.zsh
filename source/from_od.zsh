@@ -27,7 +27,7 @@ from_od fod () {
   # echo "$orig_text"        ; line_
   # echo "$chars"            ; line_
   # echo "$formatted"        ; line_
-  echo -n "${(j::)formatted}" # ; line_
+  echo -En "${(j::)formatted}" # ; line_
 }
 
 if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
