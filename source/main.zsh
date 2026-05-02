@@ -177,34 +177,60 @@ see() {
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
+  # The '$_hard_reset' var below is a DEC-specific reset sequence, which I've
+  #  included in any subsequent colour codes which set the background colour.
+  #
+  # I'm not sure why specifically it happens, but there's a recurring bug where
+  #  when a background colour is printed, and its longer than a single line,
+  #  the colour ends up leaking onto the next line after that.
+  # I woulda thought that `␛[m` would catch that, but apparently it doesn't ??
+  #
+  # Either way, printing this reset sequence seems to fix the problem.
+  # The issue is that I still don't know what the underlying problem was.
+  #  My best guess (by observation) is that it happens when a character with
+  #  a background colour is the last character on a line which then wraps.
+  #
+  # Ideally I'd like to print this before every char, but I don't know how long
+  #  it takes for a terminal to process it, and I also don't want to have too
+  #  many escape chars lying around everywhere if I don't actually need them.
+  #
+  # Also note that I call it 'hard reset', to contrast with just 'reset',
+  #  however it's not the _full_ `RIS` (Reset to Initial State) hard reset,
+  #  which is `␛c`. I'm not using the RIS reset cos it clears the entire
+  #  screen, and I can't rly justify doing that every time.
+
+  # ~~ Reset(s) ~~
   local -r _reset=$'\e[m'
+  local -r _hard_reset=$'\e[!p\e[m'
 
-  # Generic Escape Character Colours
-  local -r _unicode_colour=$'\e[0;1;38;5;231;48;5;088m'
-  local -r _c_style_colour=$'\e[0;1;38;5;033;48;5;236m'
-  local -r   _caret_colour=$'\e[0;1;38;5;226;48;5;018m'
+  # ~~ Escape Character Colours ~~
+  local -r     _esc_prefix="$_hard_reset"$'\e[1;38;5;'
+  local -r _unicode_colour="$_esc_prefix"'231;48;5;088m'
+  local -r _c_style_colour="$_esc_prefix"'033;48;5;236m'
+  local -r   _caret_colour="$_esc_prefix"'226;48;5;018m'
 
-  # Multibyte Colours
-  local _3B_colour=$'\e[49;1;32m'
-  local _4B_colour=$'\e[49;1;31m'
-  local _5B_colour=$'\e[49;1;35m'
-  local _6B_colour=$'\e[39;1;45m'
+  # ~~ Multibyte Colours ~~
+  local -r _3B_colour=$'\e[0;1;32m'
+  local -r _4B_colour=$'\e[0;1;31m'
+  local -r _5B_colour=$'\e[0;1;35m'
+  local -r _6B_colour=$'\e[0;1;45m'
 
-  # Whitespace Colours
-  local -r _CRLF_colour=$'\e[49;1;33m'  # $'\e[...;48;5;26m'
-  local -r   _SP_colour=$'\e[49;1;38;5;33m'
+  # ~~ Whitespace Colours ~~
+  local -r _CRLF_colour=$'\e[0;1;33m'  # $'\e[...;48;5;26m'
+  local -r   _SP_colour=$'\e[0;1;38;5;33m'
 
-  # Whitespace Characters
+  # ~~ Whitespace Characters ~~
   local -r _SP_char='·'  # ␣ / · / ␠ / ' ' #y)TODO
   #local-r _NL_char='␤'  # ␤ / ␊ / ↩ / ⏎   #y)TODO
 
-  # Hex Codes
+  # ~~ Hex Codes ~~
   local -r _NL_hex_code='a'
 
-  # Visual Aides
+  # ~~ Visual Aides ~~
+  # used for debugging/verbose mode
   local -r _line="${(r:$COLUMNS::─:)}"
 
-  # All Escape Characters
+  # ~~ All Escape Charsets ~~
   local -rA _none_esc_chars=(
   )
   local -rA _c_esc_chars=(
@@ -292,7 +318,7 @@ see() {
           echo -n "$0: bad option: -${(qq)OPTARG}"            # if opt == `?`
           if [[ "$opt" == ':' ]] echo -n ' needs an argument' # if opt == `:`
           if (( ! u_debug )) { echo $'\n'; see::usage; return 1; }
-          echo $'\n\e[1;31m——————— Option Issue ———————'"$reset"
+          echo $'\n\e[1;31m——————— Option Issue ———————'"$_reset"
         } >&2
       ;;
     }
@@ -301,7 +327,7 @@ see() {
       {
         echo -n $'\e[32m-'"$opt"
         if [[ -n "$OPTARG" ]] echo -n " ${(qq)OPTARG}"
-        echo $' is a valid input'"$reset"
+        echo $' is a valid input'"$_reset"
       } >&2
     }
   }
@@ -394,6 +420,13 @@ see() {
   # ———————————————————————————————————————————————————————————————————————— #
   # — Outputting Results ——————————————————————————————————————————————————— #
 
+  # This helps prevent a bug which would sometimes cause background colours
+  #  from some highlighting sequences to leak over the end of the line
+  # Technically _just_ this line doesn't seem to do anything, but I suppose it
+  #  couldn't hurt to make sure we're starting from a clean slate
+  # It's also repeated after everything's printed
+  if (( do_colours )) echo -n "$_hard_reset"
+
   # Even though this looks like associative array syntax, it's not.
   #  I'm iterating through the zipped chars and hexes arrays, so zsh splits
   #  them for me, hence the separate char and hex variables
@@ -402,26 +435,25 @@ see() {
 
     # —— Replace Chars & Print ————————————————— #
     # replace all chars with their special representations, if applicable
-    #y)TODO: check if this if statement is actually doing anything
+    #y)TODO : check if the if statement below is actually doing anything
+    #r)FIX  : the escape colour is always printed, regardless of whether the
+    #r)        char being printed will use that colour or not - fix it
     if [[ "${esc_chars[(Ie)$char]}" ]] \
       char="$esc_col${esc_chars[$char]}$reset"
+    # Note: $esc_col and $reset will have been unset if do_colours is false
 
     # if the length of the hex code is more than 2 bits, and colours are on,
     #  highlight the character its a special colour.
     if (( $#hex > 2 && do_colours )) {
       # recreate the name of the variable which stores the colour of the char
-      #  i.e. $_4B_colour for a 4-bit hex code
+      #  i.e. "$_4B_colour" for a 4-bit hex code
       colour_name="_${#hex}B_colour"
-      # then echo pass that colour into the out
-      # note: this syntax seems like the only thing that works with both when
-      #  `$char` is a hyphen (`-`), and when its a percent sign (`%`)
-      printf -- '%s' "${(P)colour_name}$char$reset"
-    } else {
-      # as much as I would love to compress this line down with the one above,
-      #  I feel like this makes a little more sense logically
-      # and means that I only have to use one if statement, rather than 2
-      printf -- '%s' "$char"
+      echo -n "${(P)colour_name}"
     }
+
+    # Note: this syntax seems like the only thing that works with both when
+    #  `$char` is a hyphen (`-`), and when its a percent sign (`%`)
+    printf -- '%s' "$char$reset"
 
     # —— Text Mode ————————————————————————————— #
     # there's no more processing to do for text mode
@@ -443,9 +475,9 @@ see() {
   #  text wasn't already a newline.
   # (this is since we're using printf, which doesn't use trailing newlines)
   if [[ "$u_mode" == 'text' && "${(L)hex/#0#}" != "$_NL_hex_code" ]] echo
-
-  if (( u_debug   )) set +x
-  if (( u_verbose )) echo $_line
+  if (( do_colours )) echo -n "$_hard_reset"
+  if (( u_verbose  )) echo $_line
+  if (( u_debug    )) set +x
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
@@ -453,21 +485,22 @@ see() {
 # if the script's being run directly (i.e. not being sourced), then run tests
 # (this line is equivalent to `if __name__ == "__main__"`)
 if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
-  local -r _line="\e[2m${(r:$COLUMNS::─:)}\e[m"   ; clear   ; echo $_line
+
+  local -r _line="\e[2m${(r:$COLUMNS::─:)}\e[m"   ; clear   ; echo "$_line"
   echo -n "this is a normal•str"                  | see "$@"; echo "$_line"
   echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; echo "$_line"
   echo -n $'str w \x0 a\nnewline Δ'               | see "$@"; echo "$_line"
   echo -n $'\a\b\e\f\r\n\t\v\'\\'                 | see "$@"; echo "$_line"
   echo $'this isn\'t a \u0014 normal•str'         | see "$@"; echo "$_line"
-  echo $'this?→\x00, its %s\nlong•"str"-\a␤\\'    | see "$@"; echo "$_line"
+  echo $'this?→\x00, is a %%s\nlong•"str"-\a␤\\'  | see "$@"; echo "$_line"
   echo $'str w \x0 a\nnew 󰟀 󰘵 󱄖  line'            | see "$@"; echo "$_line"
   echo $'\a\b\e \u0019\f\r\n\t\v\'\\'             | see "$@"; echo "$_line"
-  echo $'test \e[31mstr\e[m'                      | see "$@"; echo "$_line"
+  echo $'test\e[31m str\e[m'                      | see "$@"; echo "$_line"
   echo $'test ----   str\e[m'                    | see "$@"; echo "$_line"
 
-  # cat ../resources/control_chars.txt              | see "$@"; echo $_line
-  # cat $0 | head -n 301 | tail -n $(( LINES - 3 )) | see "$@"; echo $_line
-  # cat $0                                          | see "$@"; echo $_line
+  # cat ../resources/control_chars.txt              | see "$@"; echo "$_line"
+  # cat $0 | head -n 301 | tail -n $(( LINES - 3 )) | see "$@"; echo "$_line"
+  # cat $0                                          | see "$@"; echo "$_line"
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
@@ -475,7 +508,7 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
 
 # # These 3 can be generated rather than hardcoded - this is just temporary.
 # # Honestly I'll have to look into it, but the caret and unicode esc chars
-# #  might be able to be hardcoded as well
+# #  might be able to be generated as well
 # local -rA _cdash_esc_chars=(
 #   [esc_col]="$_caret_colour"
 #   [$'\u00']='\C-@' [$'\u01']='\C-A' [$'\u02']='\C-B' [$'\u03']='\C-C'
@@ -517,8 +550,4 @@ if [[ $ZSH_EVAL_CONTEXT == 'toplevel' ]] {
 # ——————————————————————————————————————————————————————————————————————————— #
 
 # spell:ignore cdash reprs
-
-# spell:ignoreRegexp /(?<=(^|\s)#.*\(.\)|\[.\])\w+/g
-# spell:ignoreRegexp /(?<=getopts) '[^']+'/g
 # spell:ignoreRegexp /(?<=\$\{b0\})\w+/g
-# spell:ignoreRegexp /\\(e|033|x1b)\[[0-9;]+?m\B/g
