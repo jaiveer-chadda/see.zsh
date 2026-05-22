@@ -158,9 +158,7 @@ see() {
 
   # — Debugging Options ———————————————————————————————————————————————————— #
 
-  setopt local_options
-  setopt warn_create_global
-  setopt warn_nested_var
+  setopt local_options warn_create_global warn_nested_var
 
   # — Early Debug Mode ————————————————————————————————————————————————————— #
 
@@ -352,8 +350,7 @@ see() {
     always ) do_colours=1 ;;
     never  ) do_colours=0 ;;
     # if stdout (`1`) is writing to a tty (`-t`)...
-    # i.e. if the output isn't being being piped somewhere
-    # then turn colours on
+    # i.e. if the output isn't being being piped somewhere, then turn colours on
     * ) if [[ -t 1 ]] do_colours=1 ;;
   }
 
@@ -373,13 +370,13 @@ see() {
   esc_chars[$_SP]="$_SP_char"
 
   if (( do_colours )) {
-    esc_col="${esc_chars[esc_col]}"
+    esc_col="$esc_chars[esc_col]"
     reset="$_reset"
     # You have to pass the space and newline in as variables, otherwise
     #  zsh can't process the keys
     esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
-    esc_chars[$_NL]="$_CRLF_colour${esc_chars[$_NL]}$_reset"
-    esc_chars[$_CR]="$_CRLF_colour${esc_chars[$_CR]}$_reset"
+    esc_chars[$_NL]="$_CRLF_colour$esc_chars[$_NL]$_reset"
+    esc_chars[$_CR]="$_CRLF_colour$esc_chars[$_CR]$_reset"
   }
 
   # Text mode needs an newline for legibility
@@ -394,7 +391,7 @@ see() {
   #  if the input doesn't end with a newline
   #y)TODO: change this later so it works when passing a filename in
 
-  local -r input="${$( cat; echo '.' )%.}"
+  local -r input="${$( cat "${@:-/dev/stdin}"; echo '.' )%.}"
 
   # ———————————————————————————————————————————————————————————————————————— #
   # — Pre-Processing ——————————————————————————————————————————————————————— #
@@ -435,11 +432,10 @@ see() {
 
     # —— Replace Chars & Print ————————————————— #
     # replace all chars with their special representations, if applicable
-    #y)TODO : check if the if statement below is actually doing anything
     #r)FIX  : the escape colour is always printed, regardless of whether the
     #r)        char being printed will use that colour or not - fix it
     if [[ "${esc_chars[(Ie)$char]}" ]] \
-      char="$esc_col${esc_chars[$char]}$reset"
+      char="$esc_col$esc_chars[$char]$reset"
     # Note: $esc_col and $reset will have been unset if do_colours is false
 
     # if the length of the hex code is more than 2 bits, and colours are on,
@@ -467,16 +463,16 @@ see() {
     #  also, make the hex code uppercase, and left-pad it with 5 spaces
     #y)TODO: change this so that it checks what the longest hex code is,
     #y)       and pads it to that length instead
-    echo "  :  ${(Ul:5:: :)hex}"
+    echo "  :  ${(Ul:5:)hex}"
   }
 
   # —— Final Cleanup ——————————————————————————— #
   # print a final newline if we're in text mode, and if the last char of the
   #  text wasn't already a newline.
   # (this is since we're using printf, which doesn't use trailing newlines)
-  if [[ "$u_mode" == 'text' && "${(L)hex/#0#}" != "$_NL_hex_code" ]] echo
+  if [[ "$u_mode" == 'text' && "${(L*)hex/#0#}" != "$_NL_hex_code" ]] echo
   if (( do_colours )) echo -n "$_hard_reset"
-  if (( u_verbose  )) echo $_line
+  if (( u_verbose  )) echo "$_line"
   if (( u_debug    )) set +x
 }
 
