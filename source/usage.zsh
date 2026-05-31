@@ -38,9 +38,6 @@ function see::usage () {
    __escape="$red-e$comma--${b}e${b0}scapes$charset"   \
     __width="$red-w$comma--${b}w${b0}idth${opt}num$r>" \
    __zeroes="$red-0$comma--zeroes${opt}num$r>"         \
-   __edebug="$red-D$comma$r"                           \
-    __debug="$red-d$comma--${b}d${b0}ebug$r"           \
-  __verbose="$red-v$comma--${b}v${b0}erbose$r"         \
      __help="$red-h$comma--${b}h${b0}elp$r"
 
   # ———————————————————————————————————————————————————————————————————————— #
@@ -97,10 +94,6 @@ function see::usage () {
 	  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
 	  $__zeroes
 	  $pad  Number of zeroes to pad hex codes with $b(default:$yel 2$off)$r
-
-	  $__edebug $pad Set early  debug mode (implies $red-v$r and $red-d$r)
-	  $__debug   Set normal debug mode (implies $red-v$r)
-	  $__verbose Set verbose mode
 
 	  $__help    Show this help message
 
