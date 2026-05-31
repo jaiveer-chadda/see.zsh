@@ -14,31 +14,9 @@ function see () {
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
-  # The '$_hard_reset' var below is a DEC-specific reset sequence, which I've
-  #  included in any subsequent colour codes which set the background colour.
-  #
-  # I'm not sure why specifically it happens, but there's a recurring bug where
-  #  when a background colour is printed, and its longer than a single line,
-  #  the colour ends up leaking onto the next line after that.
-  # I woulda thought that `␛[m` would catch that, but apparently it doesn't ??
-  #
-  # Either way, printing this reset sequence seems to fix the problem.
-  # The issue is that I still don't know what the underlying problem was.
-  #  My best guess (by observation) is that it happens when a character with
-  #  a background colour is the last character on a line which then wraps.
-  #
-  # Ideally I'd like to print this before every char, but I don't know how long
-  #  it takes for a terminal to process it, and I also don't want to have too
-  #  many escape chars lying around everywhere if I don't actually need them.
-  #
-  # Also note that I call it 'hard reset', to contrast with just 'reset',
-  #  however it's not the _full_ `RIS` (Reset to Initial State) hard reset,
-  #  which is `␛c`. I'm not using the RIS reset cos it clears the entire
-  #  screen, and I can't rly justify doing that every time.
-
   # ~~ Reset(s) ~~
   local -r _reset=$'\e[m'
-  local -r _hard_reset=$'\e[!p\e[m'
+  local -r _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset.note
 
   # ~~ Escape Character Colours ~~
   local -r     _esc_prefix="$_hard_reset"$'\e[1;38;5;'
@@ -83,11 +61,9 @@ function see () {
   local -i 10 u_width=32    # width for column mode (≈ xxd -c)
   local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
 
-  # the leading hyphen here turns on some debug info,
-  #  which I capture and use below
+  # the leading hyphen here turns on debug info, which I capture and use below
   local opt OPTARG OPTIND
-  while { getopts ':f:m:tlc:C:e:w:0:vDdh' opt; } {
-
+  while { getopts ':f:m:tlc:C:e:w:0:vDdh' opt; } { #
     case "$opt" {
       #### File ####
       ( f ) u_file="$OPTARG"      ;; #r)NOT IMPLEMENTED
@@ -195,12 +171,7 @@ function see () {
   # ———————————————————————————————————————————————————————————————————————— #
   # — Outputting Results ——————————————————————————————————————————————————— #
 
-  # This helps prevent a bug which would sometimes cause background colours
-  #  from some highlighting sequences to leak over the end of the line
-  # Technically _just_ this line doesn't seem to do anything, but I suppose it
-  #  couldn't hurt to make sure we're starting from a clean slate
-  # It's also repeated after everything's printed
-  if (( do_colours )) echo -n "$_hard_reset"
+  if (( do_colours )) echo -n "$_hard_reset"  # see ../notes/hard-reset.note
 
   # Even though this looks like associative array syntax, it's not.
   #  I'm iterating through the zipped chars and hexes arrays, so zsh splits

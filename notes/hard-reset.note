@@ -1,0 +1,32 @@
+
+[Escape Sequence]
+
+The `$_hard_reset` var is a DEC-specific reset sequence, which I've
+ included in any subsequent colour codes which set the background colour.
+
+I'm not sure why specifically it happens, but there's a recurring bug where
+ when a background colour is printed, and its longer than a single line,
+ the colour ends up leaking onto the next line after that.
+I woulda thought that `␛[m` would catch that, but apparently it doesn't ??
+
+Either way, printing this reset sequence seems to fix the problem.
+The issue is that I still don't know what the underlying problem was.
+ My best guess (by observation) is that it happens when a character with
+ a background colour is the last character on a line which then wraps.
+
+Ideally I'd like to print this before every char, but I don't know how long
+ it takes for a terminal to process it, and I also don't want to have too
+ many escape chars lying around everywhere if I don't actually need them.
+
+Also note that I call it 'hard reset', to contrast with just 'reset',
+ however it's not the _full_ `RIS` (Reset to Initial State) hard reset,
+ which is `␛c`. I'm not using the RIS reset cos it clears the entire
+ screen, and I can't rly justify doing that every time.
+
+[Usage]
+
+It helps prevent a bug which would sometimes cause background colours
+ from some highlighting sequences to leak over the end of the line
+Technically _just_ this line doesn't seem to do anything, but I suppose it
+ couldn't hurt to make sure we're starting from a clean slate
+It's also repeated after everything's printed
