@@ -1,25 +1,12 @@
 #!/usr/bin/env zsh
 
-source "${0:h}/usage.zsh"
+source "${${(%):-%x}:a:h}/usage.zsh"
 
 function see () {
 
-  # — Debugging Options ———————————————————————————————————————————————————— #
+  # — Set Options —————————————————————————————————————————————————————————— #
 
   setopt local_options warn_create_global warn_nested_var
-
-  # — Early Debug Mode ————————————————————————————————————————————————————— #
-
-  # this is here as a less checked, but earlier activated debug flag
-  #  so I can debug the input parsing
-  local -r _custom_ps4=$'%F{red}+ %N:%I%F{blue}\t>%f '
-
-  # Note that `-D` will act as `-d` if it isn't the sole first argument
-  if [[ "$1" == '-D' ]] {
-    echo "${(%)_custom_ps4}changing \$PS4 locally to '$_custom_ps4'" >&2
-    local PS4="$_custom_ps4"
-    set -x
-  }
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
@@ -51,9 +38,9 @@ function see () {
 
   # ~~ Escape Character Colours ~~
   local -r     _esc_prefix="$_hard_reset"$'\e[1;38;5;'
-  local -r _unicode_colour="$_esc_prefix"'231;48;5;088m'
-  local -r _c_style_colour="$_esc_prefix"'033;48;5;236m'
-  local -r   _caret_colour="$_esc_prefix"'226;48;5;018m'
+  local -r _unicode_colour="${_esc_prefix}231;48;5;088m"
+  local -r _c_style_colour="${_esc_prefix}033;48;5;236m"
+  local -r   _caret_colour="${_esc_prefix}226;48;5;018m"
 
   # ~~ Multibyte Colours ~~
   local -r _3B_colour=$'\e[0;1;32m'
@@ -71,10 +58,6 @@ function see () {
 
   # ~~ Hex Codes ~~
   local -r _NL_hex_code='a'
-
-  # ~~ Visual Aides ~~
-  # used for debugging/verbose mode
-  local -r _line="${(r:$COLUMNS::─:)}"
 
   # ~~ All Escape Charsets ~~
   local -rA _none_esc_chars=(
@@ -125,73 +108,45 @@ function see () {
   local -i 10 u_width=32    # width for column mode (≈ xxd -c)
   local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
 
-  local -i 2 u_debug=0      # [bool] debug mode (implies verbose)
-  local -i 2 u_verbose=0    # [bool] verbose mode
-
   # the leading hyphen here turns on some debug info,
   #  which I capture and use below
   local opt OPTARG OPTIND
   while { getopts ':f:m:tlc:C:e:w:0:vDdh' opt; } {
-    #
-    if (( u_debug )) echo "${(r:40::─:)}\nopt == '$opt'\narg == '$OPTARG'" >&2
-    #
+
     case "$opt" {
       #### File ####
-      f ) u_file="$OPTARG"      ;; #r)NOT IMPLEMENTED
-      #
+      ( f ) u_file="$OPTARG"      ;; #r)NOT IMPLEMENTED
+
       #### Modes ####
-      m ) u_mode="$OPTARG"      ;; #y)not fully implemented
-      t ) u_mode='text'         ;;
-      l ) u_mode='list'         ;;
-      #
+      ( m ) u_mode="$OPTARG"      ;; #y)not fully implemented
+      ( t ) u_mode='text'         ;;
+      ( l ) u_mode='list'         ;;
+
       #### Graphics ####
-      c ) u_do_colours="$OPTARG";;
-      C ) u_colours="$OPTARG"   ;; #r)NOT IMPLEMENTED
-      e ) u_esc_chars="$OPTARG" ;;
-      #
+      ( c ) u_do_colours="$OPTARG";;
+      ( C ) u_colours="$OPTARG"   ;; #r)NOT IMPLEMENTED
+      ( e ) u_esc_chars="$OPTARG" ;;
+
       #### Hex Display ####
-      w ) u_width="$OPTARG"     ;; #y)no effect yet
-      0 ) u_zero_pad="$OPTARG"  ;;
-      #
-      #### Internal/Debug ####
-      v ) u_verbose=1           ;; #y)not fully implemented
-     D|d) u_debug=1 u_verbose=1 ;;
-      #
+      ( w ) u_width="$OPTARG"     ;; #y)no effect yet
+      ( 0 ) u_zero_pad="$OPTARG"  ;;
+
       #### Usage ####
-      h ) see::usage; return 0  ;;
-      * )
-        {
-          echo -n "$0: bad option: -${(qq)OPTARG}"            # if opt == `?`
-          if [[ "$opt" == ':' ]] echo -n ' needs an argument' # if opt == `:`
-          if (( ! u_debug )) { echo $'\n'; see::usage; return 1; }
-          echo $'\n\e[1;31m——————— Option Issue ———————'"$_reset"
-        } >&2
-      ;;
-    }
-    #
-    if (( u_debug )) {
-      {
-        echo -n $'\e[32m-'"$opt"
-        if [[ -n "$OPTARG" ]] echo -n " ${(qq)OPTARG}"
-        echo $' is a valid input'"$_reset"
-      } >&2
+      ( h ) see::usage; return 0  ;;
+      ( * ) {
+        echo -nE "$0: bad option: -${(qq)OPTARG}"        # if `$opt` == `?`
+        if [[ $opt == : ]] echo -n ' needs an argument'  # if `$opt` == `:`
+
+        echo $'\n'
+        see::usage
+        return 1
+
+      } >&2 ;;
     }
   }
   shift 'OPTIND - 1'
 
-  # — Process User Input ———————————————————————————————————————————————————— #
-
-  if (( u_debug )) {
-    u_verbose=1
-    # if $PS4 is at its default value, then change it to a custom version.
-    #  - the reasoning behind this is that if $PS4's been changed by the user,
-    #    then they probably like it that way.
-    #  - but if it hasn't, then we're free to use whichever version we like
-    if [[ "$PS4" == ('+%N:%i> '|'++ ') ]] local PS4="$_custom_ps4"
-    set -x
-  }
-
-  # —— Set Colours & Special Chars (SP/NL/CR) —— #
+  # —— Decide if to do Colours ————————————————— #
 
   local -i 2 do_colours=0
   case "$u_do_colours" {
@@ -210,7 +165,7 @@ function see () {
   #  assoc array that's gonna be used for displaying chars
   local -A esc_chars=( "${(@Pkv)_charset_name}" )
 
-  # ———————————————————————————————————————————— #
+  # —— Set Colours & Special Chars (SP/NL/CR) —— #
 
   local -r _NL=$'\n' _CR=$'\r' _SP=' '
   local esc_col= reset=
@@ -320,11 +275,9 @@ function see () {
   # (this is since we're using printf, which doesn't use trailing newlines)
   if [[ "$u_mode" == 'text' && "${(L*)hex/#0#}" != "$_NL_hex_code" ]] echo
   if (( do_colours )) echo -n "$_hard_reset"
-  if (( u_verbose  )) echo "$_line"
-  if (( u_debug    )) set +x
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
 # if we're not being sourced, run tests eqv. to `if __name__ == "__main__"`
-if [[ "$ZSH_EVAL_CONTEXT" == 'toplevel' ]] "${0:a:h:h}/tests/test.zsh"
+if [[ "$ZSH_EVAL_CONTEXT" == 'toplevel' ]] "${${(%):-%x}:a:h:h}/tests/test.zsh"

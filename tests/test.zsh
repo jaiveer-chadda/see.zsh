@@ -1,6 +1,8 @@
 #!/usr/bin/env zsh
 
 () {
+  source "${${(%):-%x}:a:h:h}/source/main.zsh"
+
   local -r _line="\e[2m${(r:$COLUMNS::─:)}\e[m"   ; clear   ; echo "$_line"
   echo -n "this is a normal•str"                  | see "$@"; echo "$_line"
   echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; echo "$_line"
