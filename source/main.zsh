@@ -1,12 +1,16 @@
 #!/usr/bin/env zsh
 
-source "${${(%):-%x}:a:h}/usage.zsh"
+() {
+  local -r source="${${(%):-%x}:a:h}"
+  source "$source/usage.zsh"
+  source "$source/charsets.zsh"
+}
 
 function see () {
 
   # — Set Options —————————————————————————————————————————————————————————— #
 
-  setopt local_options warn_create_global warn_nested_var
+  setopt local_options warn_create_global
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
@@ -60,40 +64,11 @@ function see () {
   local -r _NL_hex_code='a'
 
   # ~~ All Escape Charsets ~~
-  local -rA _none_esc_chars=(
-  )
-  local -rA _c_esc_chars=(
-    [esc_col]="$_c_style_colour"
-    [$'\u00']='\0'   [$'\u01']='\x01' [$'\u02']='\x02' [$'\u03']='\x02'
-    [$'\u04']='\x04' [$'\u05']='\x05' [$'\u06']='\x06' [$'\u07']='\a'
-    [$'\u08']='\b'   [$'\u09']='\t'   [$'\u0A']='\n'   [$'\u0B']='\v'
-    [$'\u0C']='\f'   [$'\u0D']='\r'   [$'\u0E']='\x0E' [$'\u0F']='\x0E'
-    [$'\u10']='\x10' [$'\u11']='\x11' [$'\u12']='\x12' [$'\u13']='\x12'
-    [$'\u14']='\x14' [$'\u15']='\x15' [$'\u16']='\x16' [$'\u17']='\x16'
-    [$'\u18']='\x18' [$'\u19']='\x19' [$'\u1A']='\x1A' [$'\u1B']='\e'
-    [$'\u1C']='\x1C' [$'\u1D']='\x1D' [$'\u1E']='\x1E' [$'\u1F']='\x1E'
-    [$'\u7F']='\x7F'
-  )
-  local -rA _unicode_esc_chars=(
-    [esc_col]="$_unicode_colour"
-    [$'\u00']='␀'  [$'\u01']='␁'  [$'\u02']='␂'  [$'\u03']='␃'  [$'\u04']='␄'
-    [$'\u05']='␅'  [$'\u06']='␆'  [$'\u07']='␇'  [$'\u08']='␈'  [$'\u09']='␉'
-    [$'\u0A']='␤'  [$'\u0B']='␋'  [$'\u0C']='␌'  [$'\u0D']='␍'  [$'\u0E']='␎'
-    [$'\u0F']='␏'  [$'\u10']='␐'  [$'\u11']='␑'  [$'\u12']='␒'  [$'\u13']='␓'
-    [$'\u14']='␔'  [$'\u15']='␕'  [$'\u16']='␖'  [$'\u17']='␗'  [$'\u18']='␘'
-    [$'\u19']='␙'  [$'\u1A']='␚'  [$'\u1B']='␛'  [$'\u1C']='␜'  [$'\u1D']='␝'
-    [$'\u1E']='␞'  [$'\u1F']='␟'  [$'\u7F']='␡'
-  )
-  local -rA _caret_esc_chars=(
-    [esc_col]="$_caret_colour"
-    [$'\u00']='^@' [$'\u01']='^A' [$'\u02']='^B' [$'\u03']='^C' [$'\u04']='^D'
-    [$'\u05']='^E' [$'\u06']='^F' [$'\u07']='^G' [$'\u08']='^H' [$'\u09']='^I'
-    [$'\u0A']='^J' [$'\u0B']='^K' [$'\u0C']='^L' [$'\u0D']='^M' [$'\u0E']='^N'
-    [$'\u0F']='^O' [$'\u10']='^P' [$'\u11']='^Q' [$'\u12']='^R' [$'\u13']='^S'
-    [$'\u14']='^T' [$'\u15']='^U' [$'\u16']='^V' [$'\u17']='^W' [$'\u18']='^X'
-    [$'\u19']='^Y' [$'\u1A']='^Z' [$'\u1B']='^[' [$'\u1C']='^\' [$'\u1D']='^]'
-    [$'\u1E']='^^' [$'\u1F']='^_' [$'\u7F']='^?'
-  )
+
+  local -ra charsets=( none c unicode caret cdash hex uni-esc )
+  local -A "_${(@)^charsets//-/_}_esc_chars"
+
+  see::create_charsets
 
   # — Take User Input —————————————————————————————————————————————————————— #
 
@@ -160,7 +135,7 @@ function see () {
   # —— Create Charset —————————————————————————— #
 
   # recreate the esc charset variable name from input
-  local -r _charset_name="_${(L)u_esc_chars:-unicode}_esc_chars"
+  local -r _charset_name="_${(L)${u_esc_chars//-/_}:-unicode}_esc_chars"
   # then pass that input by name (P) into the
   #  assoc array that's gonna be used for displaying chars
   local -A esc_chars=( "${(@Pkv)_charset_name}" )
@@ -280,4 +255,4 @@ function see () {
 # ——————————————————————————————————————————————————————————————————————————— #
 
 # if we're not being sourced, run tests eqv. to `if __name__ == "__main__"`
-if [[ "$ZSH_EVAL_CONTEXT" == 'toplevel' ]] "${${(%):-%x}:a:h:h}/tests/test.zsh"
+if [[ "$ZSH_EVAL_CONTEXT" == toplevel ]] "${${(%):-%x}:a:h:h}/tests/test.zsh"

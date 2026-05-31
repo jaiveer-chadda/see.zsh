@@ -103,5 +103,4 @@ function see::usage () {
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-# spell:ignore cdash reprs
 # spell:ignoreRegexp /(?<=\$\{b0\})\w+/g
