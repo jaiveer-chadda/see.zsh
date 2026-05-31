@@ -39,12 +39,8 @@
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-see::usage() {
-  local -r \
-    off=$'\e[39m' \
-     b0=$'\e[22m' \
-      b=$'\e[1m'  \
-      r=$'\e[m'   \
+function see::usage () {
+  local -r r=$'\e[m' off=$'\e[39m' b0=$'\e[22m' b=$'\e[1m' \
     lrd=$'\e[91m' \
     red=$'\e[31m' \
     yel=$'\e[33m' \
@@ -154,7 +150,7 @@ see::usage() {
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-see() {
+function see () {
 
   # — Debugging Options ———————————————————————————————————————————————————— #
 
@@ -329,7 +325,7 @@ see() {
       } >&2
     }
   }
-  shift $(( OPTIND - 1 ))
+  shift 'OPTIND - 1'
 
   # — Process User Input ———————————————————————————————————————————————————— #
 
@@ -339,7 +335,7 @@ see() {
     #  - the reasoning behind this is that if $PS4's been changed by the user,
     #    then they probably like it that way.
     #  - but if it hasn't, then we're free to use whichever version we like
-    if [[ "$PS4" == '+%N:%i> ' || "$PS4" == '++' ]] local PS4="$_custom_ps4"
+    if [[ "$PS4" == ('+%N:%i> '|'++ ') ]] local PS4="$_custom_ps4"
     set -x
   }
 
@@ -347,11 +343,11 @@ see() {
 
   local -i 2 do_colours=0
   case "$u_do_colours" {
-    always ) do_colours=1 ;;
-    never  ) do_colours=0 ;;
-    # if stdout (`1`) is writing to a tty (`-t`)...
-    # i.e. if the output isn't being being piped somewhere, then turn colours on
-    * ) if [[ -t 1 ]] do_colours=1 ;;
+    ( always ) do_colours=1 ;;
+    ( never  ) do_colours=0 ;;
+    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is empty
+    # i.e. if the output isn't being being piped, then turn colours on
+    ( * ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
   }
 
   # —— Create Charset —————————————————————————— #
@@ -391,7 +387,7 @@ see() {
   #  if the input doesn't end with a newline
   #y)TODO: change this later so it works when passing a filename in
 
-  local -r input="${$( cat "${@:-/dev/stdin}"; echo '.' )%.}"
+  local -r input="${$( cat "${@:-/dev/stdin}"; echo 'END' )%END}"
 
   # ———————————————————————————————————————————————————————————————————————— #
   # — Pre-Processing ——————————————————————————————————————————————————————— #
@@ -410,7 +406,7 @@ see() {
   # - then use printf to convert each char to hex,
   #   - adding a newline between each hex value
   # - then split the result by newlines (f), and assign it to an array (@)
-  local -a hexes=( "${(@f)"$( printf '%x\n' \'${^chars} )"}" )
+  local -a hexes=( "${(@f)"$( printf $'%x\n' \'${^chars} )"}" )
   # zip $chars and $hexes together
   local -ra result=( "${(@)chars:^hexes}" )
 
