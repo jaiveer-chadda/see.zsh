@@ -5,12 +5,11 @@ function see::make_charset () {
   # —— Decide Whether to do Colours ——————————————————————————— #
 
   case "$u_do_colours" {
-    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is unset
-    #  i.e. if the output isn't being being piped
     ( always | [y1] ) do_colours=1 ;;
     ( never  | [n0] ) do_colours=0 ;;
     ( *auto* | [a-] ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
-
+    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is unset
+    #  i.e. if the output isn't being being piped
     ( * ) >&2 {
       echo -n "$funcstack[2]: unsupported colour value '$u_do_colours' "
       echo '(must be always, *auto*, or never)'
@@ -24,18 +23,15 @@ function see::make_charset () {
 
   # —— Set Colours & Special Chars —————————————————————————— #
 
-  if (( do_colours )) reset=$'\e[m'
-
-  # ———————————————————————————————————————— #
-
-
   local -r NL=$'\n' CR=$'\r' NU=$'\0' SP=' '
   local -rA custom_chars=(
-    [$SP]=$'· \e[0;38;5;26m' # ~␛34m
-    [$NU]=$'  \e[0;1;7m'     #  ␛7m
-    [$NL]=$'↩ \e[0;33m'      #  ␛33m
-    [$CR]=$'  \e[0;33m'      #  ␛33m
+    [$SP]=$'· \e[38;5;26m' # ~␛34m
+    [$NU]=$'  \e[1;7m'     #  ␛7m
+    [$NL]=$'↩ \e[33m'      #  ␛33m
+    [$CR]=$'  \e[33m'      #  ␛33m
   )
+
+  if (( do_colours )) reset=$'\e[m'
 
   local char val repr colour
   for char in "${(@k)esc_chars}" "${(@k)custom_chars}" ; {
