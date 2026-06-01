@@ -40,7 +40,7 @@ function see () {
   local -r _NL_hex_code='a'
 
   # ~~ Escape Charsets ~~
-  local -ra charsets=( none c unicode caret cdash hex uni-esc )
+  local -ra charsets=( none c unicode caret cdash hex uni-esc named )
   local -A "_${(@)^charsets//-/_}_esc_chars"
 
   see::create_charsets

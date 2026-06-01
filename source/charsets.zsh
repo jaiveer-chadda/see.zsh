@@ -50,12 +50,31 @@ function see::create_charsets () {
     [$'\u7F']='\x7F'
   )
 
+  # —— named ———————————————————————————————————————————————————————————————— #
+
+  #y)NOTE: there's an issue with this one, in that it's rly difficult to tell
+  #y)       where one character stops and another starts.
+  #y)      I'll need to see if there's some sort of solution to that
+  _named_esc_chars=(
+    [esc_col]="$_unicode_colour"  #r)find new colour
+
+    [$'\u00']='NUL' [$'\u01']='SOH' [$'\u02']='STX' [$'\u03']='ETX'
+    [$'\u04']='EOT' [$'\u05']='ENQ' [$'\u06']='ACK' [$'\u07']='BEL'
+    [$'\u08']='BS'  [$'\u09']='HT'  [$'\u0A']='LF'  [$'\u0B']='VT'
+    [$'\u0C']='FF'  [$'\u0D']='CR'  [$'\u0E']='SO'  [$'\u0F']='SI'
+    [$'\u10']='DLE' [$'\u11']='DC1' [$'\u12']='DC2' [$'\u13']='DC3'
+    [$'\u14']='DC4' [$'\u15']='NAK' [$'\u16']='SYN' [$'\u17']='ETB'
+    [$'\u18']='CAN' [$'\u19']='EM'  [$'\u1A']='SUB' [$'\u1B']='ESC'
+    [$'\u1C']='FS'  [$'\u1D']='GS'  [$'\u1E']='RS'  [$'\u1F']='US'
+    [$'\u7F']='DEL'
+  )
+
   # ————————————————————————————————————————————————————————————————————————— #
 
   # —— cdash ———————————————————————————————————————————————————————————————— #
 
   _cdash_esc_chars=(
-    [esc_col]="$_caret_colour"
+    [esc_col]="$_caret_colour"  #r)find new colour
 
     [$'\u00']='\C-@' [$'\u01']='\C-A' [$'\u02']='\C-B' [$'\u03']='\C-C'
     [$'\u04']='\C-D' [$'\u05']='\C-E' [$'\u06']='\C-F' [$'\u07']='\C-G'
@@ -71,7 +90,7 @@ function see::create_charsets () {
   # —— hex —————————————————————————————————————————————————————————————————— #
 
   _hex_esc_chars=(
-    [esc_col]="$_unicode_colour"
+    [esc_col]="$_unicode_colour"  #r)find new colour
 
     [$'\u00']='0x00' [$'\u01']='0x01' [$'\u02']='0x02' [$'\u03']='0x02'
     [$'\u04']='0x04' [$'\u05']='0x05' [$'\u06']='0x06' [$'\u07']='0x06'
@@ -87,7 +106,7 @@ function see::create_charsets () {
   # —— unicode escape ——————————————————————————————————————————————————————— #
 
   _uni_esc_esc_chars=(
-    [esc_col]="$_unicode_colour"
+    [esc_col]="$_unicode_colour"  #r)find new colour
 
     [$'\u00']='\u00' [$'\u01']='\u01' [$'\u02']='\u02' [$'\u03']='\u02'
     [$'\u04']='\u04' [$'\u05']='\u05' [$'\u06']='\u06' [$'\u07']='\u06'
