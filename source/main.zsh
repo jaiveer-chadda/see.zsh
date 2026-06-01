@@ -15,31 +15,15 @@ function see () {
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
-  # ~~ Resets ~~
-  local -r _reset=$'\e[m' _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset
-
-  # ~~ Escape Character Colours ~~                     bg        fg
-  local -r _unicode_colour=$'\e[1;48;5;88;97m'         #940000   #DFE7FF
-  local -r _c_style_colour=$'\e[1;48;5;236;38;5;33m'   #303030   #008BFF
-  local -r   _caret_colour=$'\e[1;48;5;18;38;5;226m'   #00008D   #FEFF00
+  # ~~ General ~~
+  local -r _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset
+  local -r _NL_hex_code='a'
 
   # ~~ Multibyte Colours ~~
   local -r _3B_colour=$'\e[0;1;32m'  # ␛32m
   local -r _4B_colour=$'\e[0;1;31m'  # ␛31m
   local -r _5B_colour=$'\e[0;1;35m'  # ␛35m
   local -r _6B_colour=$'\e[0;1;45m'  # ␛45m
-
-  # ~~ Whitespace Colours ~~
-  local -r _CRLF_colour=$'\e[0;33m'       #  ␛33m
-  local -r   _SP_colour=$'\e[0;38;5;26m'  # ~␛34m
-  local -r  _NUL_colour=$'\e[0;1;7m'      # ~␛7m
-
-  # ~~ Whitespace Characters ~~
-  local -r _SP_char='·'  # ␣ / · / ␠ / ' ' #y)TODO
-  local -r _NL_char='␤'  # ␤ / ␊ / ↩ / ⏎   #y)TODO
-
-  # ~~ Hex Codes ~~
-  local -r _NL_hex_code='a'
 
   # — Take User Input —————————————————————————————————————————————————————— #
 
@@ -139,6 +123,7 @@ function see () {
     if [[ "${esc_chars[(Ie)$char]}" ]] {
       char="$esc_col$esc_chars[$char]$reset"
     }  # Note: $esc_col and $reset will have been unset if do_colours is false
+    # char="${esc_chars[$char]:-$char}"
 
     # if the length of the hex code is more than 2 bits, and colours are on,
     #  highlight the character its a special colour.

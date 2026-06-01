@@ -18,15 +18,22 @@ function see::make_charset () {
     } ;;
   }
 
-  # —— Create Base Charset ———————————————————————————————————— #
+  # —— Get Base Charset ——————————————————————————————————————— #
 
   see::get_charset || return $?
 
   # —— Set Colours & Special Chars —————————————————————————— #
 
   local -r _NL=$'\n' _CR=$'\r' _NUL=$'\0' _SP=' '
+  local -r _SP_char='·'  # ␣ / · / ␠ / ' '
+
+  local -r _CRLF_colour=$'\e[0;33m'       #  ␛33m
+  local -r   _SP_colour=$'\e[0;38;5;26m'  # ~␛34m
+  local -r  _NUL_colour=$'\e[0;1;7m'      #  ␛7m
 
   esc_chars[$_SP]="$_SP_char"
+
+  local -r _reset=$'\e[m'
 
   if (( do_colours )) {
     esc_col="$esc_chars[esc_col]"
@@ -47,24 +54,16 @@ function see::make_charset () {
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
-# ——————————————————————————————————————————————————————————————————————————— #
 
-function see::get_charset () {
-  local -ra n1=( {0..31}  -1 ) n7=( {0..31} 127 )
-
-  local -a ctrl_chars
-  printf -v ctrl_chars '\\x%2x' "${(@)n7}"
-  printf -v ctrl_chars '%b'     "${(@)ctrl_chars}"
+function see::get_charset () {  #              bg        fg
+  local -r unicode=$'\e[1;48;5;88;97m'         #940000   #DFE7FF
+  local -r c_style=$'\e[1;48;5;236;38;5;33m'   #303030   #008BFF
+  local -r   caret=$'\e[1;48;5;18;38;5;226m'   #00008D   #FEFF00
 
   local -rA colours=(
-  [unicode]="$_unicode_colour"
-    [named]="$_unicode_colour"
-     [none]="$_unicode_colour"
-      [hex]="$_unicode_colour"
-    [caret]="$_caret_colour"
-    [cdash]="$_caret_colour"
-   [uniesc]="$_c_style_colour"
-        [c]="$_c_style_colour"
+  [unicode]="$unicode"  [named]="$unicode"  [none]="$unicode"  [hex]="$unicode"
+    [caret]="$caret"    [cdash]="$caret"
+   [uniesc]="$c_style"      [c]="$c_style"
   )
 
   local -ra unicode=(
@@ -76,6 +75,16 @@ function see::get_charset () {
     \\x16 \\x17 \\x18 \\x19 \\x1A \\e \\x1C \\x1D \\x1E \\x1F \\x7F
   )
 
+  local -ra n1=( {0..31} -1 ) n7=( {0..31} 127 )
+
+  # ——————————————————————————————————————————————————————————— #
+
+  local  -a ctrl_chars
+  printf -v ctrl_chars '\\x%2x' "${(@)n7}"
+  printf -v ctrl_chars '%b'     "${(@)ctrl_chars}"
+
+  # ——————————————————————————————————————————————————————————— #
+
   local -r input="${${(L)u_esc_chars:-unicode}//[-_]}"
   local -a escs; local i
 
@@ -83,14 +92,18 @@ function see::get_charset () {
     ( unicode | named | c ) escs=( "${(@P)input}" ) ;;
     ( none  )               escs=( "${(@)n1/*/?}" ) ;;
 
-    ( caret ) escs=( $( for i ($n1) echo            '^\U'$(( [##16]i+64 )) ) );;
-    ( cdash ) escs=( $( for i ($n1) echo          '\C-\U'$(( [##16]i+64 )) ) );;
-    ( hex   ) escs=( $( for i ($n7) echo    0x${(l:2::0:)$(( [##16]i   ))} ) );;
-    ( u*esc ) escs=( $( for i ($n7) echo '\\u'${(l:2::0:)$(( [##16]i   ))} ) );;
+    ( caret ) escs=($( for i ($n1) echo            '^\U'$(( [##16]i+64 )) )) ;;
+    ( cdash ) escs=($( for i ($n1) echo          '\C-\U'$(( [##16]i+64 )) )) ;;
+    ( hex   ) escs=($( for i ($n7) echo    0x${(l:2::0:)$(( [##16]i   ))} )) ;;
+    ( u*esc ) escs=($( for i ($n7) echo '\\u'${(l:2::0:)$(( [##16]i   ))} )) ;;
   }
+
+  # ——————————————————————————————————————————————————————————— #
 
   esc_chars=(
     esc_col "$colours[$input]"
     "${(@)ctrl_chars:^escs}"
   )
 }
+
+# ——————————————————————————————————————————————————————————————————————————— #
