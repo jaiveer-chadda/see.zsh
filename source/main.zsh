@@ -1,9 +1,9 @@
 #!/usr/bin/env zsh
 
 () {
-  local -r source="${${(%):-%x}:a:h}"
-  source "$source/usage.zsh"
-  source "$source/charsets.zsh"
+  local -r source_dir="${${(%):-%x}:a:h}"
+  source "$source_dir/usage.zsh"
+  source "$source_dir/charsets.zsh"
 }
 
 function see () {
@@ -48,7 +48,7 @@ function see () {
   # — Take User Input —————————————————————————————————————————————————————— #
 
   # Note: a 'u_' prefix indicates a user-inputted value
-  local u_file=             #y)not implemented yet
+  local u_file=             # explicitly pass a file as input
   local u_mode='text'       #y)only kinda implemented
 
   local u_do_colours='auto' # when to show colours
@@ -63,7 +63,7 @@ function see () {
   while { getopts ':f:m:tlc:C:e:w:0:h' opt; } { #
     case "$opt" {
       #### File ####
-      ( f ) u_file="$OPTARG"      ;; #r)NOT IMPLEMENTED
+      ( f ) u_file="$OPTARG"      ;;
 
       #### Modes ####
       ( m ) u_mode="$OPTARG"      ;; #y)not fully implemented
@@ -134,14 +134,21 @@ function see () {
   if [[ "$u_mode" == 'text' ]] esc_chars[$_NL]+="$_NL"
 
   # ————————————————————————————————————————————————————————————————————————— #
-  # — Reading from STDIN ———————————————————————————————————————————————————— #
+  # — Read Input Files —————————————————————————————————————————————————————— #
 
-  # read input from stdin, and append a newline to each line
-  # note: the `|| [[ -n ...` section allows the last line to be read
-  #  if the input doesn't end with a newline
-  #y)TODO: change this later so it works when passing a filename in
+  # fork out to `cat` to read the files
+  # `${u_file:-${@:--}}` is saying: first check if `$u_file` has some value.
+  #  if it doesn't, check the rest of the arguments `$@`.
+  #  if there's nothing in that, then read from stdin: `-`
+  local input; input="$(
+    cat "${u_file:-${@:--}}" || return $?
+    echo -n 'END'
+  )" || return $?  # if `cat` fails, exit immediately
 
-  local -r input="${$( cat "${@:-/dev/stdin}"; echo 'END' )%END}"
+  # also, append an arbitrary string `END` to the end of the input, since the
+  #  `$(...)` construct removes all trailing newlines, so this allows us to
+  #  keep the trailing newline, after we remove the `END` string we added
+  input="${input%END}"
 
   # ———————————————————————————————————————————————————————————————————————— #
   # — Pre-Processing ——————————————————————————————————————————————————————— #
