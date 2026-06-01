@@ -30,8 +30,9 @@ function see () {
   local -r _6B_colour=$'\e[0;1;45m'  # ␛45m
 
   # ~~ Whitespace Colours ~~
-  local -r _CRLF_colour=$'\e[0;33m'         #  ␛33m
-  local -r   _SP_colour=$'\e[0;1;38;5;33m'  # ~␛34m
+  local -r _CRLF_colour=$'\e[0;33m'       #  ␛33m
+  local -r   _SP_colour=$'\e[0;38;5;26m'  # ~␛34m
+  local -r  _NUL_colour=$'\e[0;1;7m'      # ~␛7m
 
   # ~~ Whitespace Characters ~~
   local -r _SP_char='·'  # ␣ / · / ␠ / ' ' #y)TODO
@@ -115,7 +116,7 @@ function see () {
 
   # —— Set Colours & Special Chars (SP/NL/CR) —— #
 
-  local -r _NL=$'\n' _CR=$'\r' _SP=' '
+  local -r _NL=$'\n' _CR=$'\r' _NUL=$'\0' _SP=' '
   local esc_col= reset=
 
   esc_chars[$_SP]="$_SP_char"
@@ -128,6 +129,7 @@ function see () {
     esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
     esc_chars[$_NL]="$_CRLF_colour$esc_chars[$_NL]$_reset"
     esc_chars[$_CR]="$_CRLF_colour$esc_chars[$_CR]$_reset"
+    esc_chars[$_NUL]="$_NUL_colour$esc_chars[$_NUL]$_reset"
   }
 
   # Text mode needs an newline for legibility
