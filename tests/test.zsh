@@ -1,21 +1,20 @@
 #!/usr/bin/env zsh
 
-() {
-  source "${${(%):-%x}:a:h:h}/source/main.zsh"
+source "$SHD/line-functions/source/line.zsh"
+source "${${(%):-%x}:a:h:h}/source/main.zsh"
 
-  local -r _line="\e[2m${(r:$COLUMNS::─:)}\e[m"   ; clear   ; echo "$_line"
-  echo -n "this is a normal•str"                  | see "$@"; echo "$_line"
-  echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; echo "$_line"
-  echo -n $'str w \x0 a\nnewline Δ'               | see "$@"; echo "$_line"
-  echo -n $'\a\b\e\f\r\n\t\v\'\\'                 | see "$@"; echo "$_line"
-  echo $'this isn\'t a \u0014 normal•str'         | see "$@"; echo "$_line"
-  echo $'this?→\x00, is a %%s\nlong•"str"-\a␤\\'  | see "$@"; echo "$_line"
-  echo $'str w \x0 a\nnew 󰟀 󰘵 󱄖  line'            | see "$@"; echo "$_line"
-  echo $'\a\b\e \u0019\f\r\n\t\v\'\\'             | see "$@"; echo "$_line"
-  echo $'test\e[31m str\e[m'                      | see "$@"; echo "$_line"
-  echo $'test ----   str\e[m'                    | see "$@"; echo "$_line"
+clear; line -d
+echo -n "this is a normal•str"                  | see "$@"; line -d
+echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; line -d
+echo -n $'str w \x0 a\nnewline Δ'               | see "$@"; line -d
+echo -n $'\a\b\e\f\r\n\t\v\'\\'                 | see "$@"; line -d
+echo $'this isn\'t a \u0014 normal•str'         | see "$@"; line -d
+echo $'this?→\x00, is a %%s\nlong•"str"-\a␤\\'  | see "$@"; line -d
+echo $'str w \x0 a\nnew 󰟀 󰘵 󱄖  line'            | see "$@"; line -d
+echo $'\a\b\e \u0019\f\r\n\t\v\'\\'             | see "$@"; line -d
+echo $'test\e[31m str\e[m'                      | see "$@"; line -d
+echo $'test ----   str\e[m'                    | see "$@"; line -d
 
-  # cat ../resources/control_chars.txt              | see "$@"; echo "$_line"
-  # cat $0 | head -n 301 | tail -n $(( LINES - 3 )) | see "$@"; echo "$_line"
-  # cat $0                                          | see "$@"; echo "$_line"
-}
+# cat ../resources/control_chars.txt              | see "$@"; line -d
+# cat $0 | head -n 301 | tail -n $(( LINES - 3 )) | see "$@"; line -d
+# cat $0                                          | see "$@"; line -d
