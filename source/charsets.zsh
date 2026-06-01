@@ -68,6 +68,16 @@ function see::get_charsets () {
   printf -v ctrl_chars '\\x%2x' "${(@)nums_127}"
   printf -v ctrl_chars '%b'     "${(@)ctrl_chars}"
 
+  local -rA colours=(
+  [unicode]="$_unicode_colour"
+    [named]="$_unicode_colour"
+      [hex]="$_unicode_colour"
+    [caret]="$_caret_colour"
+    [cdash]="$_caret_colour"
+   [uniesc]="$_c_style_colour"
+        [c]="$_c_style_colour"
+  )
+
   local -ra unicode=(
     ␀ ␁ ␂ ␃ ␄ ␅ ␆ ␇ ␈ ␉ ␤ ␋ ␌ ␍ ␎ ␏ ␐ ␑ ␒ ␓ ␔ ␕ ␖ ␗ ␘ ␙ ␚ ␛ ␜ ␝ ␞ ␟ ␡ )
   local -ra named=( NUL SOH STX ETX EOT ENQ ACK BEL BS HT LF VT FF CR SO
@@ -76,15 +86,18 @@ function see::get_charsets () {
     x11 x12 x13 x14 x15 x16 x17 x18 x19 x1A e x1C x1D x1E x1F x7F )
   local -a c none; local i; for i ("${(@)c_}") c+="\\$i"
 
-  local -a nums_127=( {0..31} 127 )
-  local -a nums_1=(   {0..31}  -1 )
+  local -ra nums_127=( {0..31} 127 )
+  local -ra nums_1=(   {0..31}  -1 )
 
-  case "$1" {
-    ( none | unicode | named | c ) echo -E "${(PF)1}" ;;
-    ( caret ) eval "echo -e           '^\U'\$(( [##16]${(@)^nums_1}+64 )) ;" ;;
-    ( cdash ) eval "echo -e         '\C-\U'\$(( [##16]${(@)^nums_1}+64 )) ;" ;;
-    ( hex   ) eval "echo     0x\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};" ;;
-    ( uni*  ) eval "echo '\\\u'\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};" ;;
+  local -r input="${(L)1//[-_]}"
+
+  case "$input" {
+    ( none | unicode | named | c ) echo -E "${(PF)input}" ;;
+
+    ( caret  ) eval "echo -e           '^\U'\$(( [##16]${(@)^nums_1}+64 )) ;";;
+    ( cdash  ) eval "echo -e         '\C-\U'\$(( [##16]${(@)^nums_1}+64 )) ;";;
+    ( hex    ) eval "echo     0x\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};";;
+    ( uniesc ) eval "echo '\\\u'\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};";;
   }
   return
   }
