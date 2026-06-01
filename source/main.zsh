@@ -118,12 +118,7 @@ function see () {
 
     # —— Replace Chars & Print ————————————————— #
     # replace all chars with their special representations, if applicable
-    #r)FIX  : the escape colour is always printed, regardless of whether the
-    #r)        char being printed will use that colour or not - fix it
-    if [[ "${esc_chars[(Ie)$char]}" ]] {
-      char="$esc_col$esc_chars[$char]$reset"
-    }  # Note: $esc_col and $reset will have been unset if do_colours is false
-    # char="${esc_chars[$char]:-$char}"
+    char="${esc_chars[$char]:-$char}"
 
     # if the length of the hex code is more than 2 bits, and colours are on,
     #  highlight the character its a special colour.

@@ -28,20 +28,21 @@ function see::make_charset () {
 
   # ———————————————————————————————————————— #
 
-  local -r _NL=$'\n' _CR=$'\r' _NU=$'\0' _SP=' '
-  local -r _SP_char='·'  # ␣ / · / ␠ / ' '
 
+  local -r NL=$'\n' CR=$'\r' NU=$'\0' SP=' '
   local -rA custom_chars=(
-    [$_SP]=$'· \e[0;38;5;26m'  # ~␛34m
-    [$_NU]=$'  \e[0;1;7m'      #  ␛7m
-    [$_NL]=$'↩ \e[0;33m'       #  ␛33m
-    [$_CR]=$'  \e[0;33m'       #  ␛33m
+    [$SP]=$'· \e[0;38;5;26m' # ~␛34m
+    [$NU]=$'  \e[0;1;7m'     #  ␛7m
+    [$NL]=$'↩ \e[0;33m'      #  ␛33m
+    [$CR]=$'  \e[0;33m'      #  ␛33m
   )
 
   local char val repr colour
-  for char val in "${(@kv)custom_chars}"; {
+  for char in "${(@k)esc_chars}" "${(@k)custom_chars}" ; {
+    val="$custom_chars[$char]"
+
+    if (( do_colours )) colour="${${val##* }:-$esc_col}"
     repr="${${${val% *}# }:-$esc_chars[$char]}"
-    if (( do_colours )) colour="${val##* }"
 
     esc_chars[$char]="$colour$repr$reset"
   }
@@ -50,7 +51,7 @@ function see::make_charset () {
 
   # Text mode needs an newline for legibility
   #  Although, this newline won't be shown if it's the last char of the file
-  if [[ "$u_mode" == 'text' ]] esc_chars[$_NL]+="$_NL"
+  if [[ "$u_mode" == 'text' ]] esc_chars[$NL]+="$NL"
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
