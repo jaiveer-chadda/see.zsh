@@ -63,7 +63,7 @@ function see () {
 
   # the leading hyphen here turns on debug info, which I capture and use below
   local opt OPTARG OPTIND
-  while { getopts ':f:m:tlc:C:e:w:0:vDdh' opt; } { #
+  while { getopts ':f:m:tlc:C:e:w:0:h' opt; } { #
     case "$opt" {
       #### File ####
       ( f ) u_file="$OPTARG"      ;; #r)NOT IMPLEMENTED
@@ -84,15 +84,14 @@ function see () {
 
       #### Usage ####
       ( h ) see::usage; return 0  ;;
-      ( * ) {
+      ( * ) >&2 {
         echo -nE "$0: bad option: -${(qq)OPTARG}"        # if `$opt` == `?`
         if [[ $opt == : ]] echo -n ' needs an argument'  # if `$opt` == `:`
 
-        echo $'\n'
+        echo $'\n'  # one NL to fix the `echo -n`, and one for padding
         see::usage
         return 1
-
-      } >&2 ;;
+      } ;;
     }
   }
   shift 'OPTIND - 1'
