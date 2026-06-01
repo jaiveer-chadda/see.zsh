@@ -161,7 +161,7 @@ function see::get_charsets () {
   # —— unicode escape ——————————————————————————————————————— #
 
   _uni_esc_esc_chars=(
-    [esc_col]="$_unicode_colour"  #r)find new colour
+    [esc_col]="$_c_style_colour"  #r)find new colour
 
     [$'\u00']='\u00' [$'\u01']='\u01' [$'\u02']='\u02' [$'\u03']='\u02'
     [$'\u04']='\u04' [$'\u05']='\u05' [$'\u06']='\u06' [$'\u07']='\u06'

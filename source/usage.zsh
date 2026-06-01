@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
 function see::usage () {
-  local -r r=$'\e[m' off=$'\e[39m' b0=$'\e[22m' b=$'\e[1m' \
+  local -r r=$'\e[m' off=$'\e[39m' b0=$'\e[22m' b=$'\e[1m' in=$'\e[7m' \
     red=$'\e[31m' lrd=$'\e[91m' \
     yel=$'\e[33m'               \
     grn=$'\e[32m' lgr=$'\e[92m' \
@@ -15,8 +15,8 @@ function see::usage () {
   local -r comma="$r, $red"
   local -r arrow="$r $blu-->$r "
   local -r pipe="$grn... $yel|$r"
+  local -r not_imp=" $in$lrd${b}[ X ]$r"
   local -r opt_format="${opt}format$r>"
-  local -r not_imp="$lrd$b [ X ]$r"
   local -r redirection="$cyn< $mag/dev/stdin $r"
   local -r charset="$comma--charset${opt}charset$r>"
   local -r eg1="$mag" eg2=$'\e[1;31m' eg3=$'\e[44;30m'
@@ -45,9 +45,8 @@ function see::usage () {
   cat <<- EOF
 	${r}Usage:
 	  $red see$r [$grn OPTIONS $r] $redirection
-	  $red see$r [$grn OPTIONS $r] [$grn FILE ... $r] $not_imp
-	  $red see$r [$grn OPTIONS $r] $file $not_imp
-	  $red see$r $file [$grn OPTIONS $r] $not_imp
+	  $red see$r [$grn OPTIONS $r] [$grn FILE ... $r]
+	  $red see$r [$grn OPTIONS $r] $file $grn...$r
 
 	Print a file or stdin to stdout, highlighting all non-printable characters.
 
@@ -85,10 +84,10 @@ function see::usage () {
 	  $pad      $dash unicode     $_uc␀$r    $_uc␊$r    $_uc␛$r $b(default)$r
 	  $pad      $dash c          $_cs\0$r   $_cs\n$r   $_cs\e$r
 	  $pad      $dash caret      $_cr^@$r   $_cr^J$r   $_cr^[$r
-	  $pad      $dash named     NUL   LF  ESC $not_imp
-	  $pad      $dash cdash    \C-@ \C-J \C-[ $not_imp
-	  $pad      $dash hex      0x00 0x0A 0x1B $not_imp
-	  $pad      $dash uni_esc  \u00 \u0A \u1B $not_imp
+	  $pad      $dash named     ${_uc}NUL$r   ${_uc}LF$r  ${_uc}ESC$r
+	  $pad      $dash cdash    $_cr\C-@$r $_cr\C-J$r $_cr\C-[$r
+	  $pad      $dash hex      ${_cs}0x00$r ${_cs}0x0A$r ${_cs}0x1B$r
+	  $pad      $dash uni_esc  $_cr\u00$r $_cr\u0A$r $_cr\u1B$r
 
 	  $__width
 	  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
