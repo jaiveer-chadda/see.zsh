@@ -95,7 +95,7 @@ function see () {
   local -A esc_chars
   local esc_col= reset=
 
-  see::make_charset
+  see::make_charset || return $?
 
   # ————————————————————————————————————————————————————————————————————————— #
   # — Read Input Files —————————————————————————————————————————————————————— #

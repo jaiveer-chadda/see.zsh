@@ -2,15 +2,20 @@
 
 function see::make_charset () {
 
-  # —— Decide if to do Colours ———————————————————————————————— #
+  # —— Decide Whether to do Colours ——————————————————————————— #
 
-  do_colours=0
   case "$u_do_colours" {
-    ( always ) do_colours=1 ;;
-    ( never  ) do_colours=0 ;;
-    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is empty
-    # i.e. if the output isn't being being piped, then turn colours on
-    ( * ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
+    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is unset
+    #  i.e. if the output isn't being being piped
+    ( always | [y1] ) do_colours=1 ;;
+    ( never  | [n0] ) do_colours=0 ;;
+    ( *auto* | [a-] ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
+
+    ( * ) >&2 {
+      echo -n "$funcstack[2]: unsupported colour value '$u_do_colours' "
+      echo '(must be always, *auto*, or never)'
+      return 1
+    } ;;
   }
 
   # ——————————————————————————————————————————————————————————— #
@@ -18,7 +23,7 @@ function see::make_charset () {
   local -ra charsets=( none c unicode caret cdash hex uni-esc named )
   local -A "_${(@)^charsets//-/_}_esc_chars"
 
-  see::get_charsets
+  see::get_charsets || return $?
 
   # ——————————————————————————————————————————————————————————— #
 
