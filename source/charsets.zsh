@@ -61,6 +61,9 @@ function see::make_charset () {
 # ——————————————————————————————————————————————————————————————————————————— #
 
 function see::get_charsets () {
+  local -a ctrl_nums ctrl_chars
+  printf -v ctrl_nums '\\x%02x' {0..31} 127
+  printf -v ctrl_chars '%b' "${(@)ctrl_nums}"
 
   # —— none ————————————————————————————————————————————————— #
 
