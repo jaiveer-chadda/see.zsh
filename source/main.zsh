@@ -11,12 +11,12 @@ function see () {
 
   # — Set Options —————————————————————————————————————————————————————————— #
 
-  setopt local_options warn_create_global
+  setopt local_options warn_create_global multi_byte
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
   # ~~ General ~~
-  local -r _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset
+  local -r _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset.note
   local -r _NL_hex_code='a'
 
   # ~~ Multibyte Colours ~~
@@ -44,27 +44,27 @@ function see () {
     case "$opt" {
       #### File ####
       ( f ) u_files+=( "$OPTARG" );;
-
+      #
       #### Modes ####
       ( m ) u_mode="$OPTARG"      ;; #y)not fully implemented
       ( t ) u_mode='text'         ;;
       ( l ) u_mode='list'         ;;
-
+      #
       #### Graphics ####
       ( c ) u_do_colours="$OPTARG";;
-      ( C ) u_colours="$OPTARG"   ;; #r)NOT IMPLEMENTED
+      ( C ) u_colours="$OPTARG"   ;; #r)not implemented
       ( e ) u_esc_chars="$OPTARG" ;;
-
+      #
       #### Hex Display ####
       ( w ) u_width="$OPTARG"     ;; #y)no effect yet
       ( 0 ) u_zero_pad="$OPTARG"  ;;
-
+      #
       #### Usage ####
       ( h ) see::usage; return 0  ;;
       ( * ) >&2 {
         echo -nE "$0: bad option: -${(qq)OPTARG}"        # if `$opt` == `?`
         if [[ $opt == : ]] echo -n ' needs an argument'  # if `$opt` == `:`
-
+        #
         echo $'\n'  # one NL to fix the `echo -n`, and one for padding
         see::usage
         return 1
@@ -73,7 +73,8 @@ function see () {
   }
   shift 'OPTIND - 1'
 
-  # —— Create Charset —————————————————————————— #
+  # ———————————————————————————————————————————————————————————————————————— #
+  # —— Create Charset —————————————————————————————————————————————————————— #
 
   local -i 2 do_colours=0
   local -A esc_chars
@@ -81,8 +82,8 @@ function see () {
 
   see::make_charset || return $?
 
-  # ————————————————————————————————————————————————————————————————————————— #
-  # — Read Input Files —————————————————————————————————————————————————————— #
+  # ———————————————————————————————————————————————————————————————————————— #
+  # — Read Input Files ————————————————————————————————————————————————————— #
 
   local input
   see::read_input "$@" || return $?
@@ -143,8 +144,6 @@ function see () {
 
     # print the hex code, separator, and a newline
     #  also, make the hex code uppercase, and left-pad it with 5 spaces
-    #y)TODO: change this so that it checks what the longest hex code is,
-    #y)       and pads it to that length instead
     echo "  :  ${(Ul:5:)hex}"
   }
 
@@ -156,7 +155,7 @@ function see () {
   if (( do_colours )) echo -n "$_hard_reset"
 }
 
-# ——————————————————————————————————————————————————————————————————————————— #
+# —————————————————————————————————————————————————————————————————————————— #
 
 # if we're not being sourced, run tests eqv. to `if __name__ == "__main__"`
 if [[ "$ZSH_EVAL_CONTEXT" == toplevel ]] "${${(%):-%x}:a:h:h}/tests/test.zsh"
