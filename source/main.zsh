@@ -41,12 +41,6 @@ function see () {
   # ~~ Hex Codes ~~
   local -r _NL_hex_code='a'
 
-  # ~~ Escape Charsets ~~
-  local -ra charsets=( none c unicode caret cdash hex uni-esc named )
-  local -A "_${(@)^charsets//-/_}_esc_chars"
-
-  see::create_charsets
-
   # — Take User Input —————————————————————————————————————————————————————— #
 
   # Note: a 'u_' prefix indicates a user-inputted value
@@ -108,33 +102,10 @@ function see () {
 
   # —— Create Charset —————————————————————————— #
 
-  # recreate the esc charset variable name from input
-  local -r _charset_name="_${(L)${u_esc_chars//-/_}:-unicode}_esc_chars"
-  # then pass that input by name (P) into the
-  #  assoc array that's gonna be used for displaying chars
-  local -A esc_chars=( "${(@Pkv)_charset_name}" )
-
-  # —— Set Colours & Special Chars (SP/NL/CR) —— #
-
-  local -r _NL=$'\n' _CR=$'\r' _NUL=$'\0' _SP=' '
+  local -A esc_chars=()
   local esc_col= reset=
 
-  esc_chars[$_SP]="$_SP_char"
-
-  if (( do_colours )) {
-    esc_col="$esc_chars[esc_col]"
-    reset="$_reset"
-    # You have to pass the space and newline in as variables, otherwise
-    #  zsh can't process the keys
-    esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
-    esc_chars[$_NL]="$_CRLF_colour$esc_chars[$_NL]$_reset"
-    esc_chars[$_CR]="$_CRLF_colour$esc_chars[$_CR]$_reset"
-    esc_chars[$_NUL]="$_NUL_colour$esc_chars[$_NUL]$_reset"
-  }
-
-  # Text mode needs an newline for legibility
-  #  Although, this newline won't be shown if it's the last char of the file
-  if [[ "$u_mode" == 'text' ]] esc_chars[$_NL]+="$_NL"
+  see::make_charset
 
   # ————————————————————————————————————————————————————————————————————————— #
   # — Read Input Files —————————————————————————————————————————————————————— #

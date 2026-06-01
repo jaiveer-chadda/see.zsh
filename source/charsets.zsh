@@ -1,12 +1,54 @@
 #!/usr/bin/env zsh
 
-function see::create_charsets () {
+function see::make_charset () {
 
-  # —— none ————————————————————————————————————————————————————————————————— #
+  local -ra charsets=( none c unicode caret cdash hex uni-esc named )
+  local -A "_${(@)^charsets//-/_}_esc_chars"
+
+  see::get_charsets
+
+  # ——————————————————————————————————————————————————————————— #
+
+  # recreate the esc charset variable name from input
+  local -r _charset_name="_${(L)${u_esc_chars//-/_}:-unicode}_esc_chars"
+  # then pass that input by name (P) into the
+  #  assoc array that's gonna be used for displaying chars
+  esc_chars=( "${(@Pkv)_charset_name}" )
+
+  # —— Set Colours & Special Chars —————————————————————————— #
+
+  local -r _NL=$'\n' _CR=$'\r' _NUL=$'\0' _SP=' '
+
+  esc_chars[$_SP]="$_SP_char"
+
+  if (( do_colours )) {
+    esc_col="$esc_chars[esc_col]"
+    reset="$_reset"
+    # You have to pass the space and newline in as variables, otherwise
+    #  zsh can't process the keys
+    esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
+    esc_chars[$_NL]="$_CRLF_colour$esc_chars[$_NL]$_reset"
+    esc_chars[$_CR]="$_CRLF_colour$esc_chars[$_CR]$_reset"
+    esc_chars[$_NUL]="$_NUL_colour$esc_chars[$_NUL]$_reset"
+  }
+
+  # ——————————————————————————————————————————————————————————— #
+
+  # Text mode needs an newline for legibility
+  #  Although, this newline won't be shown if it's the last char of the file
+  if [[ "$u_mode" == 'text' ]] esc_chars[$_NL]+="$_NL"
+}
+
+# ——————————————————————————————————————————————————————————————————————————— #
+# ——————————————————————————————————————————————————————————————————————————— #
+
+function see::get_charsets () {
+
+  # —— none ————————————————————————————————————————————————— #
 
   _none_esc_chars=()
 
-  # —— unicode —————————————————————————————————————————————————————————————— #
+  # —— unicode —————————————————————————————————————————————— #
 
   _unicode_esc_chars=(
     [esc_col]="$_unicode_colour"
@@ -20,7 +62,7 @@ function see::create_charsets () {
     [$'\u1E']='␞'  [$'\u1F']='␟'  [$'\u7F']='␡'
   )
 
-  # —— caret ———————————————————————————————————————————————————————————————— #
+  # —— caret ———————————————————————————————————————————————— #
 
   _caret_esc_chars=(
     [esc_col]="$_caret_colour"
@@ -34,7 +76,7 @@ function see::create_charsets () {
     [$'\u1E']='^^' [$'\u1F']='^_' [$'\u7F']='^?'
   )
 
-  # —— c ———————————————————————————————————————————————————————————————————— #
+  # —— c ———————————————————————————————————————————————————— #
 
   _c_esc_chars=(
     [esc_col]="$_c_style_colour"
@@ -50,7 +92,7 @@ function see::create_charsets () {
     [$'\u7F']='\x7F'
   )
 
-  # —— named ———————————————————————————————————————————————————————————————— #
+  # —— named ———————————————————————————————————————————————— #
 
   #y)NOTE: there's an issue with this one, in that it's rly difficult to tell
   #y)       where one character stops and another starts.
@@ -71,7 +113,7 @@ function see::create_charsets () {
 
   # ————————————————————————————————————————————————————————————————————————— #
 
-  # —— cdash ———————————————————————————————————————————————————————————————— #
+  # —— cdash ———————————————————————————————————————————————— #
 
   _cdash_esc_chars=(
     [esc_col]="$_caret_colour"  #r)find new colour
@@ -87,7 +129,7 @@ function see::create_charsets () {
     [$'\u7F']='\C-?'
   )
 
-  # —— hex —————————————————————————————————————————————————————————————————— #
+  # —— hex —————————————————————————————————————————————————— #
 
   _hex_esc_chars=(
     [esc_col]="$_unicode_colour"  #r)find new colour
@@ -103,7 +145,7 @@ function see::create_charsets () {
     [$'\u7F']='0x7F'
   )
 
-  # —— unicode escape ——————————————————————————————————————————————————————— #
+  # —— unicode escape ——————————————————————————————————————— #
 
   _uni_esc_esc_chars=(
     [esc_col]="$_unicode_colour"  #r)find new colour
