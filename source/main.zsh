@@ -89,19 +89,9 @@ function see () {
   }
   shift 'OPTIND - 1'
 
-  # —— Decide if to do Colours ————————————————— #
-
-  local -i 2 do_colours=0
-  case "$u_do_colours" {
-    ( always ) do_colours=1 ;;
-    ( never  ) do_colours=0 ;;
-    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is empty
-    # i.e. if the output isn't being being piped, then turn colours on
-    ( * ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
-  }
-
   # —— Create Charset —————————————————————————— #
 
+  local -i 2 do_colours=0
   local -A esc_chars
   local esc_col= reset=
 

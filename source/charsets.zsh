@@ -2,6 +2,19 @@
 
 function see::make_charset () {
 
+  # —— Decide if to do Colours ———————————————————————————————— #
+
+  do_colours=0
+  case "$u_do_colours" {
+    ( always ) do_colours=1 ;;
+    ( never  ) do_colours=0 ;;
+    # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is empty
+    # i.e. if the output isn't being being piped, then turn colours on
+    ( * ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
+  }
+
+  # ——————————————————————————————————————————————————————————— #
+
   local -ra charsets=( none c unicode caret cdash hex uni-esc named )
   local -A "_${(@)^charsets//-/_}_esc_chars"
 
