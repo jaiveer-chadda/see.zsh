@@ -24,29 +24,32 @@ function see::make_charset () {
 
   # —— Set Colours & Special Chars —————————————————————————— #
 
-  local -r _NL=$'\n' _CR=$'\r' _NUL=$'\0' _SP=' '
-  local -r _SP_char='·'  # ␣ / · / ␠ / ' '
-
-  local -r _CRLF_colour=$'\e[0;33m'       #  ␛33m
-  local -r   _SP_colour=$'\e[0;38;5;26m'  # ~␛34m
-  local -r  _NUL_colour=$'\e[0;1;7m'      #  ␛7m
-
-  esc_chars[$_SP]="$_SP_char"
-
-  local -r _reset=$'\e[m'
-
   if (( do_colours )) {
+    reset=$'\e[m'
     esc_col="$esc_chars[esc_col]"
-    reset="$_reset"
-    # You have to pass the space and newline in as variables, otherwise
-    #  zsh can't process the keys
-    esc_chars[$_SP]="$_SP_colour$_SP_char$_reset"
-    esc_chars[$_NL]="$_CRLF_colour$esc_chars[$_NL]$_reset"
-    esc_chars[$_CR]="$_CRLF_colour$esc_chars[$_CR]$_reset"
-    esc_chars[$_NUL]="$_NUL_colour$esc_chars[$_NUL]$_reset"
   }
 
-  # ——————————————————————————————————————————————————————————— #
+  # ———————————————————————————————————————— #
+
+  local -r _NL=$'\n' _CR=$'\r' _NU=$'\0' _SP=' '
+  local -r _SP_char='·'  # ␣ / · / ␠ / ' '
+
+  local -rA custom_chars=(
+    [$_SP]=$'· \e[0;38;5;26m'  # ~␛34m
+    [$_NU]=$'  \e[0;1;7m'      #  ␛7m
+    [$_NL]=$'↩ \e[0;33m'       #  ␛33m
+    [$_CR]=$'  \e[0;33m'       #  ␛33m
+  )
+
+  local char val repr colour=
+  for char val in "${(@kv)custom_chars}"; {
+    repr="${${${val% *}# }:-$esc_chars[$char]}"
+    if (( do_colours )) colour="${val##* }"
+
+    esc_chars[$char]="$colour$repr$reset"
+  }
+
+  # ———————————————————————————————————————— #
 
   # Text mode needs an newline for legibility
   #  Although, this newline won't be shown if it's the last char of the file
