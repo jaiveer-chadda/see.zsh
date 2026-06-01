@@ -24,10 +24,7 @@ function see::make_charset () {
 
   # —— Set Colours & Special Chars —————————————————————————— #
 
-  if (( do_colours )) {
-    reset=$'\e[m'
-    esc_col="$esc_chars[esc_col]"
-  }
+  if (( do_colours )) reset=$'\e[m'
 
   # ———————————————————————————————————————— #
 
@@ -41,7 +38,7 @@ function see::make_charset () {
     [$_CR]=$'  \e[0;33m'       #  ␛33m
   )
 
-  local char val repr colour=
+  local char val repr colour
   for char val in "${(@kv)custom_chars}"; {
     repr="${${${val% *}# }:-$esc_chars[$char]}"
     if (( do_colours )) colour="${val##* }"
@@ -58,16 +55,27 @@ function see::make_charset () {
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
-function see::get_charset () {  #              bg        fg
-  local -r unicode=$'\e[1;48;5;88;97m'         #940000   #DFE7FF
-  local -r c_style=$'\e[1;48;5;236;38;5;33m'   #303030   #008BFF
-  local -r   caret=$'\e[1;48;5;18;38;5;226m'   #00008D   #FEFF00
+function see::get_charset () {
 
-  local -rA colours=(
-  [unicode]="$unicode"  [named]="$unicode"  [none]="$unicode"  [hex]="$unicode"
-    [caret]="$caret"    [cdash]="$caret"
-   [uniesc]="$c_style"      [c]="$c_style"
-  )
+  local -r input="${${(L)u_esc_chars:-unicode}//[-_]}"
+
+  # ——————————————————————————————————————————————————————————— #
+
+  if (( do_colours )) {
+    local -r unicode=$'\e[1;48;5;88;97m'    # bg #940000  fg #DFE7FF
+    local -r c_style=$'\e[1;48;5;236;38;5;33m'   #303030     #008BFF
+    local -r   caret=$'\e[1;48;5;18;38;5;226m'   #00008D     #FEFF00
+
+    local -rA colours=(
+    [unicode]="$unicode"  [named]="$unicode" [none]="$unicode" [hex]="$unicode"
+      [caret]="$caret"    [cdash]="$caret"
+    [uniesc]="$c_style"      [c]="$c_style"
+    )
+
+    esc_col="$colours[$input]"
+  }
+
+  # ——————————————————————————————————————————————————————————— #
 
   local -ra unicode=(
     ␀ ␁ ␂ ␃ ␄ ␅ ␆ ␇ ␈ ␉ ␤ ␋ ␌ ␍ ␎ ␏ ␐ ␑ ␒ ␓ ␔ ␕ ␖ ␗ ␘ ␙ ␚ ␛ ␜ ␝ ␞ ␟ ␡ )
@@ -80,16 +88,15 @@ function see::get_charset () {  #              bg        fg
 
   local -ra n1=( {0..31} -1 ) n7=( {0..31} 127 )
 
-  # ——————————————————————————————————————————————————————————— #
+  # ———————————————————————————————————————— #
 
   local  -a ctrl_chars
   printf -v ctrl_chars '\\x%2x' "${(@)n7}"
   printf -v ctrl_chars '%b'     "${(@)ctrl_chars}"
 
-  # ——————————————————————————————————————————————————————————— #
+  # ———————————————————————————————————————— #
 
-  local -r input="${${(L)u_esc_chars:-unicode}//[-_]}"
-  local -a escs; local i
+  local -a escs; local -i 10 i
 
   case "$input" {
     ( unicode | named | c ) escs=( "${(@P)input}" ) ;;
@@ -103,10 +110,7 @@ function see::get_charset () {  #              bg        fg
 
   # ——————————————————————————————————————————————————————————— #
 
-  esc_chars=(
-    esc_col "$colours[$input]"
-    "${(@)ctrl_chars:^escs}"
-  )
+  esc_chars=( "${(@)ctrl_chars:^escs}" )
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
