@@ -14,35 +14,32 @@ function see () {
 
   # — Constants ———————————————————————————————————————————————————————————— #
 
-  # ~~ Reset(s) ~~
-  local -r _reset=$'\e[m'
-  local -r _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset.note
+  # ~~ Resets ~~
+  local -r _reset=$'\e[m' _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset
 
-  # ~~ Escape Character Colours ~~
-  local -r     _esc_prefix="$_hard_reset"$'\e[1;38;5;'
-  local -r _unicode_colour="${_esc_prefix}231;48;5;088m"
-  local -r _c_style_colour="${_esc_prefix}033;48;5;236m"
-  local -r   _caret_colour="${_esc_prefix}226;48;5;018m"
+  # ~~ Escape Character Colours ~~                     bg        fg
+  local -r _unicode_colour=$'\e[1;48;5;88;97m'         #940000   #DFE7FF
+  local -r _c_style_colour=$'\e[1;48;5;236;38;5;33m'   #303030   #008BFF
+  local -r   _caret_colour=$'\e[1;48;5;18;38;5;226m'   #00008D   #FEFF00
 
   # ~~ Multibyte Colours ~~
-  local -r _3B_colour=$'\e[0;1;32m'
-  local -r _4B_colour=$'\e[0;1;31m'
-  local -r _5B_colour=$'\e[0;1;35m'
-  local -r _6B_colour=$'\e[0;1;45m'
+  local -r _3B_colour=$'\e[0;1;32m'  # ␛32m
+  local -r _4B_colour=$'\e[0;1;31m'  # ␛31m
+  local -r _5B_colour=$'\e[0;1;35m'  # ␛35m
+  local -r _6B_colour=$'\e[0;1;45m'  # ␛45m
 
   # ~~ Whitespace Colours ~~
-  local -r _CRLF_colour=$'\e[0;1;33m'  # $'\e[...;48;5;26m'
-  local -r   _SP_colour=$'\e[0;1;38;5;33m'
+  local -r _CRLF_colour=$'\e[0;33m'         #  ␛33m
+  local -r   _SP_colour=$'\e[0;1;38;5;33m'  # ~␛34m
 
   # ~~ Whitespace Characters ~~
   local -r _SP_char='·'  # ␣ / · / ␠ / ' ' #y)TODO
-  #local-r _NL_char='␤'  # ␤ / ␊ / ↩ / ⏎   #y)TODO
+  local -r _NL_char='␤'  # ␤ / ␊ / ↩ / ⏎   #y)TODO
 
   # ~~ Hex Codes ~~
   local -r _NL_hex_code='a'
 
-  # ~~ All Escape Charsets ~~
-
+  # ~~ Escape Charsets ~~
   local -ra charsets=( none c unicode caret cdash hex uni-esc )
   local -A "_${(@)^charsets//-/_}_esc_chars"
 
