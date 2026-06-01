@@ -61,9 +61,37 @@ function see::make_charset () {
 # ——————————————————————————————————————————————————————————————————————————— #
 
 function see::get_charsets () {
-  local -a ctrl_nums ctrl_chars
-  printf -v ctrl_nums '\\x%02x' {0..31} 127
-  printf -v ctrl_chars '%b' "${(@)ctrl_nums}"
+  if [[ "$1" == test ]] {
+  shift
+
+  local -a ctrl_chars
+  printf -v ctrl_chars '\\x%2x' "${(@)nums_127}"
+  printf -v ctrl_chars '%b'     "${(@)ctrl_chars}"
+
+  local -ra unicode=(
+    ␀ ␁ ␂ ␃ ␄ ␅ ␆ ␇ ␈ ␉ ␤ ␋ ␌ ␍ ␎ ␏ ␐ ␑ ␒ ␓ ␔ ␕ ␖ ␗ ␘ ␙ ␚ ␛ ␜ ␝ ␞ ␟ ␡ )
+  local -ra named=( NUL SOH STX ETX EOT ENQ ACK BEL BS HT LF VT FF CR SO
+    SI DLE DC1 DC2 DC3 DC4 NAK SYN ETB CAN EM SUB ESC FS GS RS US DEL )
+  local -ra c_=( '0' x01 x02 x03 x04 x05 x06 a b t n v f r x0E x0F x10 
+    x11 x12 x13 x14 x15 x16 x17 x18 x19 x1A e x1C x1D x1E x1F x7F )
+  local -a c none; local i; for i ("${(@)c_}") c+="\\$i"
+
+  local -a nums_127=( {0..31} 127 )
+  local -a nums_1=(   {0..31}  -1 )
+
+  case "$1" {
+    ( none | unicode | named | c ) echo -E "${(PF)1}" ;;
+    ( caret ) eval "echo -e           '^\U'\$(( [##16]${(@)^nums_1}+64 )) ;" ;;
+    ( cdash ) eval "echo -e         '\C-\U'\$(( [##16]${(@)^nums_1}+64 )) ;" ;;
+    ( hex   ) eval "echo     0x\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};" ;;
+    ( uni*  ) eval "echo '\\\u'\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};" ;;
+  }
+  return
+  }
+
+# ——————————————————————————————————————————————————————————————————————————— #
+# ——————————————————————————————————————————————————————————————————————————— #
+# ——————————————————————————————————————————————————————————————————————————— #
 
   # —— none ————————————————————————————————————————————————— #
 
