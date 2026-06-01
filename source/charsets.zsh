@@ -23,7 +23,7 @@ function see::make_charset () {
   local -ra charsets=( none c unicode caret cdash hex uni-esc named )
   local -A "_${(@)^charsets//-/_}_esc_chars"
 
-  see::get_charsets || return $?
+  see::get_charset || return $?
 
   # ——————————————————————————————————————————————————————————— #
 
@@ -60,17 +60,18 @@ function see::make_charset () {
 # ——————————————————————————————————————————————————————————————————————————— #
 # ——————————————————————————————————————————————————————————————————————————— #
 
-function see::get_charsets () {
+function see::get_charset () {
   if [[ "$1" == test ]] {
   shift
 
   local -a ctrl_chars
-  printf -v ctrl_chars '\\x%2x' "${(@)nums_127}"
+  printf -v ctrl_chars '\\x%2x' "${(@)n7}"
   printf -v ctrl_chars '%b'     "${(@)ctrl_chars}"
 
   local -rA colours=(
   [unicode]="$_unicode_colour"
     [named]="$_unicode_colour"
+     [none]="$_unicode_colour"
       [hex]="$_unicode_colour"
     [caret]="$_caret_colour"
     [cdash]="$_caret_colour"
@@ -84,21 +85,25 @@ function see::get_charsets () {
     SI DLE DC1 DC2 DC3 DC4 NAK SYN ETB CAN EM SUB ESC FS GS RS US DEL )
   local -ra c_=( '0' x01 x02 x03 x04 x05 x06 a b t n v f r x0E x0F x10 
     x11 x12 x13 x14 x15 x16 x17 x18 x19 x1A e x1C x1D x1E x1F x7F )
-  local -a c none; local i; for i ("${(@)c_}") c+="\\$i"
+  local -a c; local i; for i ("${(@)c_}") c+="\\$i"
 
-  local -ra nums_127=( {0..31} 127 )
-  local -ra nums_1=(   {0..31}  -1 )
+  local -ra n1=( {0..31}  -1 ) n7=( {0..31} 127 )
 
+  local -a escs
   local -r input="${(L)1//[-_]}"
 
   case "$input" {
-    ( none | unicode | named | c ) echo -E "${(PF)input}" ;;
+    ( unicode | named | c ) escs=( "${(@P)input}" ) ;;
+    ( none  )               escs=( "${(@)n1/*/?}" ) ;;
 
-    ( caret  ) eval "echo -e           '^\U'\$(( [##16]${(@)^nums_1}+64 )) ;";;
-    ( cdash  ) eval "echo -e         '\C-\U'\$(( [##16]${(@)^nums_1}+64 )) ;";;
-    ( hex    ) eval "echo     0x\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};";;
-    ( uniesc ) eval "echo '\\\u'\${(l:2::0:)\$(( [##16]${(@)^nums_127}  ))};";;
+    ( caret ) escs=( $( for i ($n1) echo            '^\U'$(( [##16]i+64 )) ) );;
+    ( cdash ) escs=( $( for i ($n1) echo          '\C-\U'$(( [##16]i+64 )) ) );;
+    ( hex   ) escs=( $( for i ($n7) echo    0x${(l:2::0:)$(( [##16]i   ))} ) );;
+    ( u*esc ) escs=( $( for i ($n7) echo '\\u'${(l:2::0:)$(( [##16]i   ))} ) );;
   }
+
+  echo -E "${(@F)escs}"
+
   return
   }
 
