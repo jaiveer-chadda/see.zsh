@@ -102,7 +102,7 @@ function see () {
 
   # —— Create Charset —————————————————————————— #
 
-  local -A esc_chars=()
+  local -A esc_chars
   local esc_col= reset=
 
   see::make_charset
@@ -116,21 +116,18 @@ function see () {
   # ———————————————————————————————————————————————————————————————————————— #
   # — Pre-Processing ——————————————————————————————————————————————————————— #
 
-  # I did this originally to remove the traling newline
-  #  added by the `input+=...` line, but idk if/when it's actually needed
-  #y)TODO: check if/when it's needed
-
   # —— Split Input at Codepoints —————————————— #
   # split input at every !!codepoint!!
   #  - i.e. it recognises multi-byte characters
   local -ra chars=( "${(@s::)input}" )
 
   # —— Convert Chars to Hex ———————————————————— #
-  # - take every char and prepend it with a quote: `'`
-  # - then use printf to convert each char to hex,
-  #   - adding a newline between each hex value
-  # - then split the result by newlines (f), and assign it to an array (@)
-  local -a hexes=( "${(@f)"$( printf $'%x\n' \'${^chars} )"}" )
+  # take every char and prepend it with a quote: `\'$^chars`, then use
+  #  `printf` to convert each char to hex, adding a NL between hex codes
+  local hex_str; printf -v hex_str $'%x\n' \'$^chars
+  # then split the result by newlines (f), and assign it to an array (@)
+  local -ra hexes=( "${(@f)hex_str}" )
+
   # zip $chars and $hexes together
   local -ra result=( "${(@)chars:^hexes}" )
 
@@ -149,9 +146,9 @@ function see () {
     # replace all chars with their special representations, if applicable
     #r)FIX  : the escape colour is always printed, regardless of whether the
     #r)        char being printed will use that colour or not - fix it
-    if [[ "${esc_chars[(Ie)$char]}" ]] \
+    if [[ "${esc_chars[(Ie)$char]}" ]] {
       char="$esc_col$esc_chars[$char]$reset"
-    # Note: $esc_col and $reset will have been unset if do_colours is false
+    }  # Note: $esc_col and $reset will have been unset if do_colours is false
 
     # if the length of the hex code is more than 2 bits, and colours are on,
     #  highlight the character its a special colour.
