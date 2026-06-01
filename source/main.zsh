@@ -126,12 +126,12 @@ function see () {
       # recreate the name of the variable which stores the colour of the char
       #  i.e. "$_4B_colour" for a 4-bit hex code
       colour_name="_${#hex}B_colour"
-      echo -n "${(P)colour_name}"
+      char="${(P)colour_name}$char$reset"
     }
 
     # Note: this syntax seems like the only thing that works with both when
     #  `$char` is a hyphen (`-`), and when its a percent sign (`%`)
-    printf -- '%s' "$char$reset"
+    printf -- '%s' "$char"
 
     # —— Text Mode ————————————————————————————— #
     # there's no more processing to do for text mode
