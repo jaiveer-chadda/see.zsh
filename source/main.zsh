@@ -49,7 +49,7 @@ function see () {
   # — Take User Input —————————————————————————————————————————————————————— #
 
   # Note: a 'u_' prefix indicates a user-inputted value
-  local u_file=             # explicitly pass a file as input
+  local -a u_files          # explicitly pass a file as input
   local u_mode='text'       #y)only kinda implemented
 
   local u_do_colours='auto' # when to show colours
@@ -64,7 +64,7 @@ function see () {
   while { getopts ':f:m:tlc:C:e:w:0:h' opt; } { #
     case "$opt" {
       #### File ####
-      ( f ) u_file="$OPTARG"      ;;
+      ( f ) u_files+=( "$OPTARG" );;
 
       #### Modes ####
       ( m ) u_mode="$OPTARG"      ;; #y)not fully implemented
@@ -138,7 +138,7 @@ function see () {
   # — Read Input Files —————————————————————————————————————————————————————— #
 
   local input
-  see::read_input
+  see::read_input "$@" || return $?
 
   # ———————————————————————————————————————————————————————————————————————— #
   # — Pre-Processing ——————————————————————————————————————————————————————— #

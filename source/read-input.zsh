@@ -7,7 +7,7 @@ function see::read_input () {
   #  if it doesn't, check the rest of the arguments `$@`.
   #  if there's nothing in that, then read from stdin: `-`
   input="$(
-    cat "${u_file:-${@:--}}" || return $?
+    cat "${(@)u_files:-${@:--}}" || return $?
     echo -n 'END'
   )" || return $?  # if `cat` fails, exit immediately
 
