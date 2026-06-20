@@ -37,10 +37,11 @@ function see () {
 
   local -i 10 u_width=32    # width for column mode ( ≈ `xxd`'s `-c` option )
   local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
+  local -i 2  u_show_nl=1
 
   local opt OPTARG; local -i 10 OPTIND
   # the leading hyphen here turns on debug info, which I capture and use below
-  while { getopts ':f:m:tlc:C:e:w:0:h' opt; } { #
+  while { getopts ':f:m:tlc:C:e:Nw:0:h' opt; } { #
     case "$opt" {
       #### File ####
       ( f ) u_files+=( "$OPTARG" );;
@@ -54,6 +55,7 @@ function see () {
       ( c ) u_do_colours="$OPTARG";;
       ( C ) u_colours="$OPTARG"   ;; #r)not implemented
       ( e ) u_esc_chars="$OPTARG" ;;
+      ( N ) u_show_nl=0           ;;
       #
       #### Hex Display ####
       ( w ) u_width="$OPTARG"     ;; #y)no effect yet
@@ -156,4 +158,4 @@ function see () {
 # —————————————————————————————————————————————————————————————————————————— #
 
 # if we're not being sourced, run tests - eqv. to `if __name__ == "__main__"`
-if [[ "$ZSH_EVAL_CONTEXT" == toplevel ]] "${${(%):-%x}:a:h:h}/tests/test.zsh"
+if [[ $ZSH_EVAL_CONTEXT == toplevel ]] ${${(%):-%x}:a:h:h}/tests/test.zsh "$@"

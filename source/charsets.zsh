@@ -47,7 +47,7 @@ function see::make_charset () {
 
   # Text mode needs an newline for legibility
   #  Although, this newline won't be shown if it's the last char of the file
-  if [[ "$u_mode" == 'text' ]] esc_chars[$NL]+="$NL"
+  if [[ "$u_mode" == 'text' && $u_show_nl -eq 1 ]] esc_chars[$NL]+="$NL"
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
@@ -78,9 +78,9 @@ function see::get_charset () {
     ␀ ␁ ␂ ␃ ␄ ␅ ␆ ␇ ␈ ␉ ␤ ␋ ␌ ␍ ␎ ␏ ␐ ␑ ␒ ␓ ␔ ␕ ␖ ␗ ␘ ␙ ␚ ␛ ␜ ␝ ␞ ␟ ␡ )
   local -ra named=( NUL SOH STX ETX EOT ENQ ACK BEL BS HT LF VT FF CR SO
     SI DLE DC1 DC2 DC3 DC4 NAK SYN ETB CAN EM SUB ESC FS GS RS US DEL )
-  local -ra c=( \\0 \\x01 \\x02 \\x03 \\x04 \\x05 \\x06 \\a \\b \\t
-    \\n \\v \\f \\r \\x0E \\x0F \\x10 \\x11 \\x12 \\x13 \\x14 \\x15
-    \\x16 \\x17 \\x18 \\x19 \\x1A \\e \\x1C \\x1D \\x1E \\x1F \\x7F
+  local -ra c=( \\0 \\1 \\2 \\3 \\4 \\5 \\6 \\a \\b \\t \\n \\v \\f \\r
+    \\x0E \\x0F \\x10 \\x11 \\x12 \\x13 \\x14 \\x15 \\x16 \\x17 \\x18 \\x19
+    \\x1A \\e   \\x1C \\x1D \\x1E \\x1F \\x7F
   )
 
   local -ra n1=( {0..31} -1 ) n7=( {0..31} 127 )
