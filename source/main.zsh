@@ -11,7 +11,7 @@ function see () {
 
   # —— Set Options ————————————————————————————————————————————————————————— #
 
-  setopt local_options warn_create_global multi_byte
+  setopt local_options warn_create_global
 
   # —— Constants ——————————————————————————————————————————————————————————— #
 
@@ -39,13 +39,15 @@ function see () {
   local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
   local -i 2  u_show_nl=1   # should NL chars print actual NLs in text mode?
   local -i 2  u_trail_nl=1  # should there be a trailing newline after the text
+  local -i 2  u_multibyte=1 # should the input be read as ASCII or UTF-8?
 
   local opt OPTARG; local -i 10 OPTIND
   # the leading hyphen here turns on debug info, which I capture and use below
-  while { getopts ':''f:''m:tl''c:C:e:''nN''w:0:''h' opt; } { #
+  while { getopts ':''f:M''m:tl''c:C:e:''nN''w:0:''h' opt; } { #
     case "$opt" {
       #### Input Reading ####
       ( f ) u_files+=( "$OPTARG" );;
+      ( M ) u_multibyte=0         ;;
 
       #### Modes ####
       ( m ) u_mode="$OPTARG"      ;; #y)not fully implemented
@@ -73,11 +75,29 @@ function see () {
 
         echo $'\n'  # one NL to fix the `echo -n`, and one for padding
         see::usage
+
         return 1
       } ;;
     }
   }
   shift 'OPTIND - 1'
+
+  # ———————————————————————————————————————————————————————————————————————— #
+  # —— Set Encoding ———————————————————————————————————————————————————————— #
+
+  if (( u_multibyte )) {
+    setopt multi_byte
+
+    if   [[ "$LC_ALL" == *'.UTF-8' ]] { local LC_ALL="$LC_ALL"; } \
+    elif [[ "$LANG"   == *'.UTF-8' ]] { local LC_ALL="$LANG"  ; } \
+    else                              { local LC_ALL='C.UTF-8' }
+
+  } else {
+
+    setopt no_multi_byte
+    local LC_ALL='C'
+
+  }
 
   # ———————————————————————————————————————————————————————————————————————— #
   # —— Create Charset —————————————————————————————————————————————————————— #
@@ -127,9 +147,9 @@ function see () {
     # replace all chars with their special representations, if applicable
     char="${esc_chars[$char]:-$char}"
 
-    # if the length of the hex code is more than 2 bits, and colours are on,
-    #  highlight the character its special colour.
-    if (( $#hex > 2 && do_colours )) {
+    # if the hex code len is > 2 bits, and if there's gonna be any multibyte
+    #  chars to highlight, colour each char based on its number of bits.
+    if (( $#hex > 2 && u_multibyte && do_colours )) {
       # recreate the name of the variable which stores the colour of the char
       #  i.e. `$_4B_colour` for a 4-bit hex code
       colour_name="_${#hex}B_colour"
@@ -148,7 +168,7 @@ function see () {
 
     # print the hex code, separator, and a newline
     #  also, make the hex code uppercase, and left-pad it with 5 spaces
-    echo "  :  ${(Ul:5:)hex}"
+    echo "  :  ${(Ul. u_multibyte ? 5 : 2 .)hex}"
   }
 
   # —— Final Cleanup ——————————————————————————— #
