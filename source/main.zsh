@@ -9,11 +9,11 @@
 
 function see () {
 
-  # — Set Options —————————————————————————————————————————————————————————— #
+  # —— Set Options ————————————————————————————————————————————————————————— #
 
   setopt local_options warn_create_global multi_byte
 
-  # — Constants ———————————————————————————————————————————————————————————— #
+  # —— Constants ——————————————————————————————————————————————————————————— #
 
   # ~~ General ~~
   local -r _hard_reset=$'\e[!p\e[m'  # see ../notes/hard-reset.note
@@ -25,7 +25,7 @@ function see () {
   local -r _5B_colour=$'\e[1;35m'  # ␛35m
   local -r _6B_colour=$'\e[1;45m'  # ␛45m
 
-  # — Take User Input —————————————————————————————————————————————————————— #
+  # —— Take User Input ————————————————————————————————————————————————————— #
 
   # Note: a `u_` prefix indicates a user-inputted value
   local -a u_files          # explicitly pass file(s) as input
@@ -37,36 +37,40 @@ function see () {
 
   local -i 10 u_width=32    # width for column mode ( ≈ `xxd`'s `-c` option )
   local -i 10 u_zero_pad=2  # how many 0s to add before a hex code
-  local -i 2  u_show_nl=1
+  local -i 2  u_show_nl=1   # should NL chars print actual NLs in text mode?
+  local -i 2  u_trail_nl=1  # should there be a trailing newline after the text
 
   local opt OPTARG; local -i 10 OPTIND
   # the leading hyphen here turns on debug info, which I capture and use below
-  while { getopts ':f:m:tlc:C:e:Nw:0:h' opt; } { #
+  while { getopts ':''f:''m:tl''c:C:e:''nN''w:0:''h' opt; } { #
     case "$opt" {
-      #### File ####
+      #### Input Reading ####
       ( f ) u_files+=( "$OPTARG" );;
-      #
+
       #### Modes ####
       ( m ) u_mode="$OPTARG"      ;; #y)not fully implemented
       ( t ) u_mode='text'         ;;
       ( l ) u_mode='list'         ;;
-      #
+
       #### Graphics ####
       ( c ) u_do_colours="$OPTARG";;
       ( C ) u_colours="$OPTARG"   ;; #r)not implemented
       ( e ) u_esc_chars="$OPTARG" ;;
+
+      #### Printing ####
+      ( n ) u_trail_nl=0          ;;
       ( N ) u_show_nl=0           ;;
-      #
+
       #### Hex Display ####
       ( w ) u_width="$OPTARG"     ;; #y)no effect yet
       ( 0 ) u_zero_pad="$OPTARG"  ;;
-      #
+
       #### Usage ####
       ( h ) see::usage; return 0  ;;
       ( * ) >&2 {
         echo -nE "$0: bad option: -${(qq)OPTARG}"  # if `$opt` == `?`
         if [[ $opt == : ]] echo -n ' needs an argument'
-        #
+
         echo $'\n'  # one NL to fix the `echo -n`, and one for padding
         see::usage
         return 1
@@ -85,20 +89,20 @@ function see () {
   see::make_charset || return $?
 
   # ———————————————————————————————————————————————————————————————————————— #
-  # — Read Input Files ————————————————————————————————————————————————————— #
+  # —— Read Input Files ———————————————————————————————————————————————————— #
 
   local input
   see::read_input "$@" || return $?
 
   # ———————————————————————————————————————————————————————————————————————— #
-  # — Pre-Processing ——————————————————————————————————————————————————————— #
+  # —— Preprocessing ——————————————————————————————————————————————————————— #
 
-  # —— Split Input at Codepoints —————————————— #
+  # ~— Split Input at Codepoints —————————————— #
   # split input at every !!codepoint!!
   #  - i.e. it recognises multi-byte characters
   local -ra chars=( "${(@s::)input}" )
 
-  # —— Convert Chars to Hex ———————————————————— #
+  # ~— Convert Chars to Hex ———————————————————— #
   # take every char and prepend it with a quote: `\'$^chars`, then use
   #  `printf` to convert each char to hex, adding a NL between hex codes
   local hex_str; printf -v hex_str '%x\n' \'$^chars
@@ -109,7 +113,7 @@ function see () {
   local -ra result=( "${(@)chars:^hexes}" )
 
   # ———————————————————————————————————————————————————————————————————————— #
-  # — Outputting Results ——————————————————————————————————————————————————— #
+  # —— Outputting Results —————————————————————————————————————————————————— #
 
   if (( do_colours )) echo -n "$_hard_reset"  # see ../notes/hard-reset.note
 
@@ -119,7 +123,7 @@ function see () {
   local char hex colour_name
   for char hex in "${(@)result}"; {
 
-    # —— Replace Chars & Print ————————————————— #
+    # ~— Replace Chars & Print ————————————————— #
     # replace all chars with their special representations, if applicable
     char="${esc_chars[$char]:-$char}"
 
@@ -134,11 +138,11 @@ function see () {
 
     echo -nE - "$char"
 
-    # —— Text Mode ————————————————————————————— #
+    # ~— Text Mode ————————————————————————————— #
     # there's no more processing to do for text mode
     if [[ "$u_mode" == 'text' ]] continue
 
-    # —— List Mode ————————————————————————————— #
+    # ~— List Mode ————————————————————————————— #
     # add a left padding to the hex chars which need it
     if (( $#hex < u_zero_pad )) hex="${(l:u_zero_pad::0:)hex}"
 
@@ -150,8 +154,11 @@ function see () {
   # —— Final Cleanup ——————————————————————————— #
   # print a final newline if we're in text mode, and if the last char of the
   #  text wasn't already a newline.
-  # (this is since we're using `printf`, which doesn't do trailing newlines)
-  if [[ "$u_mode" == 'text' && "${(L*)hex/#0#}" != "$_NL_hex_code" ]] echo
+  # (this is since we're using `echo -n`, which doesn't do trailing newlines)
+  if [[ "$u_mode" == 'text' && $u_trail_nl -eq 1 &&
+    ( "${(L*)hex/#0#}" != "$_NL_hex_code" || $u_show_nl -eq 0 )
+  ]] echo
+
   if (( do_colours )) echo -n "$_hard_reset"
 }
 
