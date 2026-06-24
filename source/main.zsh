@@ -11,7 +11,7 @@ function see () {
 
   # —— Set Options ————————————————————————————————————————————————————————— #
 
-  setopt local_options warn_create_global
+  setopt local_options warn_create_global multi_byte
 
   # —— Constants ——————————————————————————————————————————————————————————— #
 
@@ -83,23 +83,6 @@ function see () {
   shift 'OPTIND - 1'
 
   # ———————————————————————————————————————————————————————————————————————— #
-  # —— Set Encoding ———————————————————————————————————————————————————————— #
-
-  if (( u_multibyte )) {
-    setopt multi_byte
-
-    if   [[ "$LC_ALL" == *'.UTF-8' ]] { local LC_ALL="$LC_ALL"; } \
-    elif [[ "$LANG"   == *'.UTF-8' ]] { local LC_ALL="$LANG"  ; } \
-    else                              { local LC_ALL='C.UTF-8' }
-
-  } else {
-
-    setopt no_multi_byte
-    local LC_ALL='C'
-
-  }
-
-  # ———————————————————————————————————————————————————————————————————————— #
   # —— Create Charset —————————————————————————————————————————————————————— #
 
   local -i 2 do_colours=0
@@ -144,16 +127,25 @@ function see () {
   for char hex in "${(@)result}"; {
 
     # ~— Replace Chars & Print ————————————————— #
-    # replace all chars with their special representations, if applicable
-    char="${esc_chars[$char]:-$char}"
+    # replace all chars with their special representations, if there is one
 
-    # if the hex code len is > 2 bits, and if there's gonna be any multibyte
-    #  chars to highlight, colour each char based on its number of bits.
-    if (( $#hex > 2 && u_multibyte && do_colours )) {
-      # recreate the name of the variable which stores the colour of the char
-      #  i.e. `$_4B_colour` for a 4-bit hex code
-      colour_name="_${#hex}B_colour"
-      char="${(P)colour_name}$char$reset"
+    if [[ "$char" != [[:ascii:]]
+      && ( $u_multibyte -eq 0 || "$char" != [[:graph:]] )
+    ]] {
+      char=$'\e[36m'
+      if [[ "$u_mode" == 'text' ]] { char+="\x$hex"; } else { char+='?' }
+      char+="$reset"
+
+    } else {
+      char="${esc_chars[$char]:-$char}"
+      # if the hex code len is > 2 bits, and if there's gonna be any multibyte
+      #  chars to highlight, colour each char based on its number of bits.
+      if (( $#hex > 2 && u_multibyte && do_colours )) {
+        # recreate the name of the variable which stores the colour of the char
+        #  i.e. `$_4B_colour` for a 4-bit hex code
+        colour_name="_${#hex}B_colour"
+        char="${(P)colour_name}$char$reset"
+      }
     }
 
     echo -nE - "$char"
