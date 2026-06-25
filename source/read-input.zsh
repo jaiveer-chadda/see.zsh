@@ -14,7 +14,7 @@ function see::read_input () {
   input="$(
     "${(@z)pager}"  "${(@)u_files:-${@:--}}" || return $?
     echo -n 'END'
-  )" || return $?  # if `cat` fails, exit immediately
+  )" || return $?  # if the pager fails, exit immediately
 
   # also, append an arbitrary string `END` to the end of the input, since the
   #  `$(...)` construct removes all trailing newlines, so this allows us to

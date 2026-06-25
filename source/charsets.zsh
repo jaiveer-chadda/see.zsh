@@ -23,15 +23,19 @@ function see::make_charset () {
 
   # —— Set Colours & Special Chars —————————————————————————— #
 
-  local -r NL=$'\n' CR=$'\r' NU=$'\0' SP=' '
+  local -r NL=$'\n'
   local -rA custom_chars=(
-    [$SP]=$'· \e[38;5;26m' # ~␛34m
-    [$NU]=$'  \e[1;7m'     #  ␛7m
-    [$NL]=$'↩ \e[33m'      #  ␛33m
-    [$CR]=$'  \e[33m'      #  ␛33m
+    [$'\t']=$'⟩ \e[48;5;18m' # ~␛44m
+    [$'\e']=$'  \e[48;5;26m' # ~␛44m
+    [$'\v']=$'⭿ \e[48;5;18m' # ~␛44m
+    [$'\b']=$'⌫ \e[30;41m'   #  ␛41m
+    [''' ']=$'· \e[38;5;26m' # ~␛34m
+    [$'\0']=$'  \e[1;7m'     #  ␛07m
+    [$'\n']=$'↩ \e[33m'      #  ␛33m
+    [$'\r']=$'⏎ \e[33m'      #  ␛33m
   )
 
-  if (( do_colours )) reset=$'\e[m'
+  if (( do_colours )) reset=$'\e[m' unprintable=$'\e[36m'
 
   local char val repr colour
   for char in "${(@k)esc_chars}" "${(@k)custom_chars}" ; {
@@ -46,15 +50,16 @@ function see::make_charset () {
   # ———————————————————————————————————————— #
 
   # Text mode needs an newline for legibility
-  #  Although, this newline won't be shown if it's the last char of the file
-  if [[ "$u_mode" == 'text' && $u_show_nl -eq 1 ]] esc_chars[$NL]+="$NL"
+  #  Although, this newline won't be shown if it's the last char of the file,
+  #  or if `$u_show_nl` is unset
+  if [[ "$u_mode" == 'text' ]] && (( u_show_nl )) esc_chars[$NL]+="$NL"
 }
 
 # ——————————————————————————————————————————————————————————————————————————— #
 
 function see::get_charset () {
 
-  local -r input="${${(L)u_esc_chars:-unicode}//[-_]}"
+  local -r input="${${(L)u_esc_chars:-unicode}//[-_ ]}"
 
   # ——————————————————————————————————————————————————————————— #
 
@@ -64,9 +69,10 @@ function see::get_charset () {
     local -r   caret=$'\e[1;48;5;18;38;5;226m'   #00008D     #FEFF00
 
     local -rA colours=(
-    [unicode]="$unicode"  [named]="$unicode" [none]="$unicode" [hex]="$unicode"
-      [caret]="$caret"    [cdash]="$caret"
-    [uniesc]="$c_style"      [c]="$c_style"
+    [unicode]="$unicode"  [caret]="$caret"  [uniesc]="$c_style"
+      [named]="$unicode"  [cdash]="$caret"       [c]="$c_style"
+       [none]="$unicode"
+        [hex]="$unicode"
     )
 
     esc_col="$colours[$input]"
@@ -80,7 +86,7 @@ function see::get_charset () {
     SI DLE DC1 DC2 DC3 DC4 NAK SYN ETB CAN EM SUB ESC FS GS RS US DEL )
   local -ra c=( \\0 \\1 \\2 \\3 \\4 \\5 \\6 \\a \\b \\t \\n \\v \\f \\r
     \\x0E \\x0F \\x10 \\x11 \\x12 \\x13 \\x14 \\x15 \\x16 \\x17 \\x18 \\x19
-    \\x1A \\e   \\x1C \\x1D \\x1E \\x1F \\x7F
+    \\x1A  \\e  \\x1C \\x1D \\x1E \\x1F \\x7F
   )
 
   local -ra n1=( {0..31} -1 ) n7=( {0..31} 127 )
@@ -102,7 +108,26 @@ function see::get_charset () {
     ( caret ) escs=($( for i ($n1) echo            '^\U'$(( [##16]i+64 )) )) ;;
     ( cdash ) escs=($( for i ($n1) echo          '\C-\U'$(( [##16]i+64 )) )) ;;
     ( hex   ) escs=($( for i ($n7) echo    0x${(l:2::0:)$(( [##16]i   ))} )) ;;
-    ( u*esc ) escs=($( for i ($n7) echo '\\u'${(l:2::0:)$(( [##16]i   ))} )) ;;
+    ( *esc* ) escs=($( for i ($n7) echo '\\u'${(l:2::0:)$(( [##16]i   ))} )) ;;
+
+    (   *   )
+      print -ru 2 "$(<<- EOF
+				$funcstack[3]: unsupported character set '$u_esc_chars'
+				  valid charsets are:
+				    - ␛     Unicode  [default]
+				    - ESC   Named
+				    - \e    C
+				    - ^[    Caret
+				    - \C-[  C-dash
+				    - 0x1B  Hex
+				    - \u1B  Unicode Escape
+				    - ?     None
+				  note: all charset names are case-insensitive,
+				   and all hyphens, spaces, and underscores in names are ignored
+			EOF
+      )"
+      return 1
+    ;;
   }
 
   # ——————————————————————————————————————————————————————————— #

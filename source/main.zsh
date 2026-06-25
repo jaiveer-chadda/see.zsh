@@ -87,7 +87,7 @@ function see () {
 
   local -i 2 do_colours=0
   local -A esc_chars
-  local esc_col= reset=
+  local esc_col= reset= unprintable=
 
   see::make_charset || return $?
 
@@ -120,27 +120,35 @@ function see () {
 
   if (( do_colours )) echo -n "$_hard_reset"  # see ../notes/hard-reset.note
 
-  # Even though this looks like associative array syntax, it's not.
+  # even though this looks like associative array syntax, it's not.
   #  I'm iterating through the zipped chars and hexes arrays, so zsh splits
   #  them for me, hence the separate char and hex variables
   local char hex colour_name
   for char hex in "${(@)result}"; {
 
     # ~— Replace Chars & Print ————————————————— #
-    # replace all chars with their special representations, if there is one
-
-    if [[ "$char" != [[:ascii:]]
-      && ( $u_multibyte -eq 0 || "$char" != [[:graph:]] )
+    # replace each char with its special representation, if one exists
+    # if `$char` can't be printed, then use its hex code instead
+    #  - never replace ASCII chars, cos we've defined escapes for all of them
+    #  - if we're in multibyte mode (default), then only replace chars if
+    #     that aren't printable (mostly spaces, joiners, etc.)
+    #  - if we're not in multibyte mode, then replace any non-ASCII character
+    # NB: `delete / ^? / \x7F / 0b01111111` is the last ASCII char
+    if [[  "$char" != [[:ascii:]]
+      && ( "$char" != [[:graph:]] || $u_multibyte -eq 0 )
     ]] {
-      char=$'\e[36m'
-      if [[ "$u_mode" == 'text' ]] { char+="\x$hex"; } else { char+='?' }
+      char="$unprintable"
+      # column mode doesn't need the hex repr, since it'll already have it
+      #  so just substitute a star instead
+      if [[ "$u_mode" == 'text' ]] { char+="\x$hex:u"; } else { char+='*' }
       char+="$reset"
 
     } else {
+      # NB: this will only run if `$char` is printable by us
       char="${esc_chars[$char]:-$char}"
-      # if the hex code len is > 2 bits, and if there's gonna be any multibyte
-      #  chars to highlight, colour each char based on its number of bits.
-      if (( $#hex > 2 && u_multibyte && do_colours )) {
+      # NB: in non-multibyte mode, $#hex always == 2, so this will never run.
+      # if the hex's len is > 2, colour each char based on its number of bits
+      if (( $#hex > 2 && do_colours )) {
         # recreate the name of the variable which stores the colour of the char
         #  i.e. `$_4B_colour` for a 4-bit hex code
         colour_name="_${#hex}B_colour"
