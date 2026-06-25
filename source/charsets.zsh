@@ -61,8 +61,12 @@ function see::make_charset () {
 # ——————————————————————————————————————————————————————————————————————————— #
 
 function see::get_charset () {
+  local input
+  if   [[ -n "$u_esc_chars" ]] { input="$u_esc_chars"; } \
+  elif [[ ! -t 1            ]] { input='C'           ; } \
+  else                         { input='unicode'     ; }
 
-  local -r input="${${(L)u_esc_chars:-unicode}//[-_ ]}"
+  input="${${(L)input}//[-_ ]}"
 
   # ——————————————————————————————————————————————————————————— #
 
@@ -117,9 +121,9 @@ function see::get_charset () {
       print -ru 2 "$(<<- EOF
 				$funcstack[3]: unsupported character set '$u_esc_chars'
 				  valid charsets are:
-				    - ␛     Unicode  [default]
+				    - ␛     Unicode  [default when output is to a tty]
 				    - ESC   Named
-				    - \e    C
+				    - \e    C        [default when being piped]
 				    - ^[    Caret
 				    - \C-[  C-dash
 				    - 0x1B  Hex
