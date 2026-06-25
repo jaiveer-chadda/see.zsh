@@ -15,7 +15,7 @@ function see::test () {
   echo $'this?→\x00, is a %%s\nlong•"str"-\a␤\\'  | see "$@"; line -d
   echo $'str w \x0 a\nnew 󰟀 󰘵 󱄖  line'            | see "$@"; line -d
   echo $'\a\b\e \u0019\f\r\n\t\v\'\\'             | see "$@"; line -d
-  echo $'test\e[31m str\e[m'                      | see "$@"; line -d
+  echo $'     test\e[31m str\e[m'                 | see "$@"; line -d
   echo $'test ----   str\e[m'                    | see "$@"; line -d
 
   # cat ../resources/control_chars.txt              | see "$@"; line -d

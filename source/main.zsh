@@ -11,7 +11,7 @@ function see () {
 
   # —— Set Options ————————————————————————————————————————————————————————— #
 
-  setopt local_options warn_create_global multi_byte
+  setopt local_options warn_create_global multibyte
 
   # —— Constants ——————————————————————————————————————————————————————————— #
 
@@ -100,10 +100,14 @@ function see () {
   # ———————————————————————————————————————————————————————————————————————— #
   # —— Preprocessing ——————————————————————————————————————————————————————— #
 
-  # ~— Split Input at Codepoints —————————————— #
-  # split input at every !!codepoint!!
-  #  - i.e. it recognises multi-byte characters
+  # ~— Split Input by Character ——————————————— #
+  # split `$input` at every !! character !!
+  #  - if we're in multibyte mode, then split it at every codepoint
+  #  - if we're not, then split it at every byte
+  if ! (( u_multibyte )) unsetopt multibyte
   local -ra chars=( "${(@s::)input}" )
+  # the `multibyte` option is needed for some other parsing, so re-set it
+  setopt multibyte
 
   # ~— Convert Chars to Hex ———————————————————— #
   # take every char and prepend it with a quote: `\'$^chars`, then use
