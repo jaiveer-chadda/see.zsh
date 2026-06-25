@@ -6,9 +6,9 @@ source "${${(%):-%x}:a:h:h}/source/main.zsh"
 function see::test () {
   clear; line -d
 
-  echo -n "this is a normal•str"                  | see "$@"; line -d
+  echo -n "is this a•normal §tr?"                 | see "$@"; line -d
   echo -n $'this?→\x00, its %s\nlong•"str"-\a␤\\' | see "$@"; line -d
-  echo -n $'str　w \x0 a\nnewline Δ'               | see "$@"; line -d
+  echo -n $'str　w \x0 a\nnew ± line Δ'            | see "$@"; line -d
   echo -n $'\a\b\e\f\r\n\t\v\x7F\' \\'            | see "$@"; line -d
 
   echo $'this isn\'t a \u0014 normal•str'         | see "$@"; line -d

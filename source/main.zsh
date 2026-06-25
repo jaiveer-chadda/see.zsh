@@ -20,10 +20,11 @@ function see () {
   local -r _NL_hex_code='a'
 
   # ~~ Multibyte Colours ~~
-  local -r _3B_colour=$'\e[1;32m'  # ␛32m
-  local -r _4B_colour=$'\e[1;31m'  # ␛31m
-  local -r _5B_colour=$'\e[1;35m'  # ␛35m
-  local -r _6B_colour=$'\e[1;45m'  # ␛45m
+  local -r _2b_colour=$'\e[1;34m'  # ␛34m
+  local -r _3b_colour=$'\e[1;32m'  # ␛32m
+  local -r _4b_colour=$'\e[1;31m'  # ␛31m
+  local -r _5b_colour=$'\e[1;35m'  # ␛35m
+  local -r _6b_colour=$'\e[1;45m'  # ␛45m
 
   # —— Take User Input ————————————————————————————————————————————————————— #
 
@@ -150,12 +151,12 @@ function see () {
     } else {
       # NB: this will only run if `$char` is printable by us
       char="${esc_chars[$char]:-$char}"
-      # NB: in non-multibyte mode, $#hex always == 2, so this will never run.
-      # if the hex's len is > 2, colour each char based on its number of bits
-      if (( $#hex > 2 && do_colours )) {
+      # NB: in non-multibyte mode, $hex is always <= 127, so this'll never run.
+      # if the char is non-ascii, colour it based on the number of bits it has
+      if (( 16#$hex > 0x7F && do_colours )) {
         # recreate the name of the variable which stores the colour of the char
-        #  i.e. `$_4B_colour` for a 4-bit hex code
-        colour_name="_${#hex}B_colour"
+        #  i.e. `$_4b_colour` for a 4-bit hex code
+        colour_name="_${#hex}b_colour"
         char="${(P)colour_name}$char$reset"
       }
     }
