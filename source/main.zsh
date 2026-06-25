@@ -73,7 +73,7 @@ function see () {
         echo -nE "$0: bad option: -${(qq)OPTARG}"  # if `$opt` == `?`
         if [[ $opt == : ]] echo -n ' needs an argument'
 
-        echo $'\n'  # one NL to fix the `echo -n`, and one for padding
+        echo  # print a NL to fix the `echo -n`
         see::usage
 
         return 1

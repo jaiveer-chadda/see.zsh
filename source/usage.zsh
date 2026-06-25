@@ -1,6 +1,9 @@
 #!/usr/bin/env zsh
 
 function see::usage () {
+
+  if [[ $funcstack == *see::test* ]] return
+
   local -r r=$'\e[m' off=$'\e[39m' b0=$'\e[22m' b=$'\e[1m' in=$'\e[7m' \
     red=$'\e[31m' lrd=$'\e[91m' \
     yel=$'\e[33m'               \
