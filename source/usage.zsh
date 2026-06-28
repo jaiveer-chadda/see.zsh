@@ -45,61 +45,61 @@ function see::usage () {
 
   # ———————————————————————————————————————————————————————————————————————— #
 
-  cat <<- EOF
-	${r}Usage:
-	  $red see$r [$grn OPTIONS $r] $redirection
-	  $red see$r [$grn OPTIONS $r] [$grn FILE ... $r]
-	  $red see$r [$grn OPTIONS $r] $file $grn...$r
+  echo -E "$(<<- EOF
+		${r}Usage:
+		  $red see$r [$grn OPTIONS $r] $redirection
+		  $red see$r [$grn OPTIONS $r] [$grn FILE ... $r]
+		  $red see$r [$grn OPTIONS $r] $file $grn...$r
 
-	Print a file or stdin to stdout, highlighting all non-printable characters.
+		Print some input to stdout, highlighting all non-printable characters.
 
-	  $__file $not_imp
-	  $pad  The file to be read in and $lbl'seen'$r
+		  $__file
+		  $pad  The file to be read in and $lbl'seen'$r
 
-	  $__mode $not_imp
-	  $pad  Set the output mode
-	  $pad      Possible values:
-	  $pad      $dash text $b(default$off)$r
-	  $pad      $dash list
+		  $__mode $not_imp
+		  $pad  Set the output mode
+		  $pad      Possible values:
+		  $pad      $dash text $b(default$off)$r
+		  $pad      $dash list
 
-	  $__text    Set output to text mode (shorthand for $red--mode$grn text$r)
-	  $__list    Set output to list mode (shorthand for $red--mode$grn list$r)
+		  $__text    Set output to text mode (shorthand for $red--mode$grn text$r)
+		  $__list    Set output to list mode (shorthand for $red--mode$grn list$r)
 
-	  $__colour
-	  $pad  When to display colours in the output
-	  $pad      Possible values:
-	  $pad      $dash always
-	  $pad      $dash $mag*${r}auto$mag*$r $b(default$off)$r
-	  $pad      $dash never
+		  $__colour
+		  $pad  When to display colours in the output
+		  $pad      Possible values:
+		  $pad      $dash always
+		  $pad      $dash $mag*${r}auto$mag*$r $b(default$off)$r
+		  $pad      $dash never
 
-	  $__colours $not_imp
-	  $pad  Which colours to use for specific characters
-	  $pad      Example: $lgr'1B 32  0A 33;45  0 44;1'$r
-	  $pad      $dash $lgr'1B 35'   $arrow\U1B : magenta fg       $arrow$eg1␛$r
-	  $pad      $dash $lgr'0A 1;31' $arrow\U0A : bold, red bg     $arrow$eg2␊$r
-	  $pad      $dash $lgr'0  44;30'$arrow\U00 : black fg, blue bg$arrow$eg3␀$r
-	  $pad      Note: consecutive spaces in$opt_format are ignored
+		  $__colours $not_imp
+		  $pad  Which colours to use for specific characters
+		  $pad      Example: $lgr'1B 32  0A 33;45  0 44;1'$r
+		  $pad      $dash $lgr'1B 35'   $arrow\U1B : magenta fg       $arrow$eg1␛$r
+		  $pad      $dash $lgr'0A 1;31' $arrow\U0A : bold, red bg     $arrow$eg2␊$r
+		  $pad      $dash $lgr'0  44;30'$arrow\U00 : black fg, blue bg$arrow$eg3␀$r
+		  $pad      Note: consecutive spaces in$opt_format are ignored
 
-	  $__escape
-	  $pad  Which charset to display non-printable characters with
-	  $pad      Possible values:
-	  $pad      $dash none
-	  $pad      $dash unicode     $_uc␀$r    $_uc␊$r    $_uc␛$r $b(default)$r
-	  $pad      $dash c          $_cs\0$r   $_cs\n$r   $_cs\e$r
-	  $pad      $dash caret      $_cr^@$r   $_cr^J$r   $_cr^[$r
-	  $pad      $dash named     ${_uc}NUL$r   ${_uc}LF$r  ${_uc}ESC$r
-	  $pad      $dash cdash    $_cr\C-@$r $_cr\C-J$r $_cr\C-[$r
-	  $pad      $dash hex      ${_cs}0x00$r ${_cs}0x0A$r ${_cs}0x1B$r
-	  $pad      $dash uni_esc  $_cr\u00$r $_cr\u0A$r $_cr\u1B$r
+		  $__escape
+		  $pad  Which charset to display non-printable characters with
+		  $pad      Possible values:
+		  $pad      $dash none
+		  $pad      $dash unicode     $_uc␀$r    $_uc␊$r    $_uc␛$r $b(default)$r
+		  $pad      $dash c          $_cs\0$r   $_cs\n$r   $_cs\e$r
+		  $pad      $dash caret      $_cr^@$r   $_cr^J$r   $_cr^[$r
+		  $pad      $dash named     ${_uc}NUL$r   ${_uc}LF$r  ${_uc}ESC$r
+		  $pad      $dash cdash    $_cr\C-@$r $_cr\C-J$r $_cr\C-[$r
+		  $pad      $dash hex      ${_cs}0x00$r ${_cs}0x0A$r ${_cs}0x1B$r
+		  $pad      $dash uni_esc  $_cr\u00$r $_cr\u0A$r $_cr\u1B$r
 
-	  $__width
-	  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
-	  $__zeroes
-	  $pad  Number of zeroes to pad hex codes with $b(default:$yel 2$off)$r
+		  $__width
+		  $pad  Width of the columns in list mode $b(default:$yel 32$off)$r
+		  $__zeroes
+		  $pad  Number of zeroes to pad hex codes with $b(default:$yel 2$off)$r
 
-	  $__help    Show this help message
-
-	EOF
+		  $__help    Show this help message
+		EOF
+  )"$'\n'
   return 0
 }
 
