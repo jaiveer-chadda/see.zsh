@@ -15,20 +15,21 @@ function see::make_charset () {
 
   # —— Get Base Charset ——————————————————————————————————————— #
 
+  local -i 2 do_custom=0
   see::get_charset || return $?
 
   # —— Set Colours & Special Chars —————————————————————————— #
 
-  local -r NL=$'\n' DLET=$'\x7F'
+  local -r NL=$'\n' SPAC=' ' DELT=$'\x7F'
   local -rA custom_chars=(
-    [$DLET]=$'⇉ \e[1;30;41m' #  ␛41m
+    [$DELT]=$'⇉ \e[1;30;41m' #  ␛41m
     [$'\b']=$'⇇ \e[1;30;41m' #  ␛41m
     [$'\f']=$'⇟ \e[1;30;43m' #  ␛43m
     [$'\a']=$'🯺 \e[1;30;42m' #  ␛42m
-    [''' ']=$'· \e[38;5;26m' #  #06D
+    [$SPAC]=$'· \e[38;5;26m' #  #06D
     [$'\e']=$'  \e[48;5;26m' #  #06D
+    [$'\v']=$'⤓ \e[48;5;20m' #  #00E
     [$'\t']=$'⇥ \e[48;5;18m' #  #008
-    [$'\v']=$'⤓ \e[48;5;18m' #  #008
     [$'\0']=$'  \e[1;7m'     #  ␛07m
     [$'\n']=$'↩ \e[33m'      #  ␛33m
     [$'\r']=$'⏎ \e[33m'      #  ␛33m
@@ -37,12 +38,13 @@ function see::make_charset () {
   if (( do_colours )) reset=$'\e[m' unprintable=$'\e[36m'
 
   local char val repr colour
-  for char in "${(@k)esc_chars}" "${(@k)custom_chars}" ; {
-    val="$custom_chars[$char]"
+  for char in "${(@k)esc_chars}" "${(@k)custom_chars}" ' '; {
+    val="$custom_chars[$char]" repr=
 
     if (( do_colours )) colour="${${val##* }:-$esc_col}"
-    repr="${${${val% *}# }:-$esc_chars[$char]}"
+    if (( do_custom  )) || [[ $char == ' ' ]] repr="${${val% *}# }"
 
+    repr="${repr:-$esc_chars[$char]}"
     esc_chars[$char]="$colour$repr$reset"
   }
 
@@ -62,7 +64,8 @@ function see::get_charset () {
   elif [[ ! -t 1            ]] { input='C'           ; } \
   else                         { input='unicode'     ; }
 
-  input="${${(L)input}//[-_ ]}"
+  input="${(L)input//[-_ ]}"
+  if [[ -t 1 && "$input" == 'unicode' ]] do_custom=1
 
   # ——————————————————————————————————————————————————————————— #
 
