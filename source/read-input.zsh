@@ -15,20 +15,29 @@ function see::read_input () {
   # if nothing was inputted, then read from stdin `-`
   if ! (( $#files_to_print )) files_to_print=( - )
 
-  local -i 10 fd
+  local -i 10 file_desc
   local file chunk
 
   for file in "${(@)files_to_print}"; {
-    fd=-1  # an arbitrary, non-zero number
+    file_desc=-1  # an arbitrary, non-zero number
+
+    if [[ "$file" == ${~_is_stdin} ]] {
+      file_desc=0
 
     # if we aren't reading from stdin, then open the file for reading as a
-    #  new file descriptor, and store its number in `$fd`
-    if [[ "$file" == ${~_is_stdin} ]] { fd=0; } else { exec {fd}<"$file"; }
+    #  new file descriptor, and store its number in `$file_desc`
+    } else {
+      # first check that the file actually exists, and that we can read from it
+      if ! [[ -e "$file" ]] { echo "'$file' doesn't exist"  >&2; continue; }
+      if ! [[ -r "$file" ]] { echo "'$file' isn't readable" >&2; continue; }
 
-    # read from `$fd` in 8kb chunks
-    while { sysread -i $fd chunk; } input+="$chunk"
+      exec {file_desc}<"$file"
+    }
 
-    # if we opened a custom fd, then, now that we're done, close `$fd`
-    if (( fd != 0 )) exec {fd}<&-
+    # read from `$file_desc` in 8kb chunks
+    while { sysread -i $file_desc chunk; } input+="$chunk"
+
+    # if we opened a custom fd, then, now that we're done, close `$file_desc`
+    if (( file_desc != 0 )) exec {file_desc}<&-
   }
 }
