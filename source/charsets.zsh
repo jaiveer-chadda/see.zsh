@@ -7,14 +7,10 @@ function see::make_charset () {
   case "$u_do_colours" {
     ( always | [y1] ) do_colours=1 ;;
     ( never  | [n0] ) do_colours=0 ;;
-    ( *auto* | [a-] ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
     # if stdout (`1`) is writing to a tty (`-t`) and `$NO_COLOUR` is unset
     #  i.e. if the output isn't being being piped
-    ( * ) >&2 {
-      echo -n "$funcstack[2]: unsupported colour value '$u_do_colours' "
-      echo '(must be always, *auto*, or never)'
-      return 1
-    } ;;
+    ( *auto* | [a-] ) if [[ -t 1 && -z "$NO_COLOR" ]] do_colours=1 ;;
+    ( * ) see::error colour; return 1 ;;
   }
 
   # —— Get Base Charset ——————————————————————————————————————— #
@@ -109,7 +105,7 @@ function see::get_charset () {
   local -a escs; local -i 10 i
 
   case "$input" {
-    ( unicode | named | c ) escs=( "${(@P)input}" ) ;;
+    ( named | unicode | c ) escs=( "${(@P)input}" ) ;;
     ( none  )               escs=( "${(@)n1/*/?}" ) ;;
 
     ( caret ) escs=($( for i ($n1) echo            '^\U'$(( [##16]i+64 )) )) ;;
@@ -117,24 +113,7 @@ function see::get_charset () {
     ( hex   ) escs=($( for i ($n7) echo    0x${(l:2::0:)$(( [##16]i   ))} )) ;;
     ( *esc* ) escs=($( for i ($n7) echo '\\u'${(l:2::0:)$(( [##16]i   ))} )) ;;
 
-    (   *   )
-      print -ru 2 "$(<<- EOF
-				$funcstack[3]: unsupported character set '$u_esc_chars'
-				  valid charsets are:
-				    - ␛     Unicode  [default when output is to a tty]
-				    - ESC   Named
-				    - \e    C        [default when being piped]
-				    - ^[    Caret
-				    - \C-[  C-dash
-				    - 0x1B  Hex
-				    - \u1B  Unicode Escape
-				    - ?     None
-				  note: all charset names are case-insensitive,
-				   and all hyphens, spaces, and underscores in names are ignored
-			EOF
-      )"
-      return 1
-    ;;
+    (   *   ) see::error charset; return 1 ;;
   }
 
   # ——————————————————————————————————————————————————————————— #

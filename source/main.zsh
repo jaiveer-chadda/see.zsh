@@ -1,7 +1,8 @@
 #!/usr/bin/env zsh
 
-() {
+function -- () {
   local -r source_dir="${${(%):-%x}:a:h}"
+  source "$source_dir/error.zsh"
   source "$source_dir/usage.zsh"
   source "$source_dir/charsets.zsh"
   source "$source_dir/read-input.zsh"
@@ -69,16 +70,8 @@ function see () {
       ( 0 ) u_zero_pad="$OPTARG"  ;;
 
       #### Usage ####
-      ( h ) see::usage; return 0  ;;
-      ( * ) >&2 {
-        echo -nE "$0: bad option: -${(qq)OPTARG}"  # if `$opt` == `?`
-        if [[ $opt == : ]] echo -n ' needs an argument'
-
-        echo  # print a NL to fix the `echo -n`
-        see::usage
-
-        return 1
-      } ;;
+      ( h ) see::usage       ; return 0 ;;
+      ( * ) see::error option; return 1 ;;
     }
   }
   shift 'OPTIND - 1'

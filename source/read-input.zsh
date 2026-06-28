@@ -28,8 +28,8 @@ function see::read_input () {
     #  new file descriptor, and store its number in `$file_desc`
     } else {
       # first check that the file actually exists, and that we can read from it
-      if ! [[ -e "$file" ]] { echo "'$file' doesn't exist"  >&2; continue; }
-      if ! [[ -r "$file" ]] { echo "'$file' isn't readable" >&2; continue; }
+      if ! [[ -e "$file" ]] { see::error file-find; continue; }
+      if ! [[ -r "$file" ]] { see::error file-read; continue; }
 
       exec {file_desc}<"$file"
     }
