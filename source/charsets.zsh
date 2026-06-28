@@ -13,9 +13,21 @@ function see::make_charset () {
     ( * ) see::error colour; return 1 ;;
   }
 
-  # —— Get Base Charset ——————————————————————————————————————— #
+  # —— Decide Whether to do Custom Chars —————————————————————— #
 
   local -i 2 do_custom=0
+  case "$u_do_custom" {
+    ( always | [y1] ) do_custom=1 ;;
+    ( never  | [n0] ) do_custom=0 ;;
+    ( *auto* | [a-] )
+      if [[ -t 1 && "${(L)u_esc_chars//[-_ ]}" == (unicode|'') ]] do_custom=1
+    ;;
+
+    ( * ) see::error custom; return 1 ;;
+  }
+
+  # —— Get Base Charset ——————————————————————————————————————— #
+
   see::get_charset || return $?
 
   # —— Set Colours & Special Chars —————————————————————————— #
@@ -65,7 +77,6 @@ function see::get_charset () {
   else                         { input='unicode'     ; }
 
   input="${(L)input//[-_ ]}"
-  if [[ -t 1 && "$input" == 'unicode' ]] do_custom=1
 
   # ——————————————————————————————————————————————————————————— #
 

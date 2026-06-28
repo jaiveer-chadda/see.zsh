@@ -16,9 +16,10 @@ function see::error () {
       see::usage
     ;;
 
-    ( colour )
-      echo -n£ "unsupported colour value '$u_do_colours' "
-      echo '(must be always, *auto*, or never)'
+    ( colour | custom )
+      echo -nE "unsupported ${1/#%custom/custom character} directive '"
+      [[ $1 == colour ]] && echo -nE "$u_do_colours" || echo -nE "$u_do_custom"
+      echo "' (must be always, *auto*, or never)"
     ;;
 
     ( charset )

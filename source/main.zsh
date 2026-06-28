@@ -34,6 +34,7 @@ function see () {
   local u_mode='text'       #y)only kinda implemented
 
   local u_do_colours='auto' # when to show colours
+  local u_do_custom='auto'  # when to show custom characters
   local u_colours           #y)not implemented yet
   local u_esc_chars         # default is 'unicode' - handled elsewhere
 
@@ -45,7 +46,7 @@ function see () {
 
   local opt OPTARG; local -i 10 OPTIND
   # the leading hyphen here turns on debug info, which I capture and use below
-  while { getopts ':''f:M''m:tl''c:C:e:''nN''w:0:''h' opt; } { #
+  while { getopts ':''f:M''m:tl''c:C:e:E:''nN''w:0:''h' opt; } { #
     case "$opt" {
       #### Input Reading ####
       ( f ) u_files+=( "$OPTARG" );;
@@ -60,6 +61,7 @@ function see () {
       ( c ) u_do_colours="$OPTARG";;
       ( C ) u_colours="$OPTARG"   ;; #r)not implemented
       ( e ) u_esc_chars="$OPTARG" ;;
+      ( E ) u_do_custom="$OPTARG" ;;
 
       #### Printing ####
       ( n ) u_trail_nl=0          ;;
