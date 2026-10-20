@@ -2,3 +2,5 @@
 .vscode/
 tests/_*
 ._*
+
+build/
