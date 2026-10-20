@@ -153,7 +153,7 @@ function -- () {
 
   # then, if successful, execute the program
   #  run the newly compiled binary (with sanitisation options set)
-  ASAN_OPTIONS="$ASAN" "${(@)CMD}"
+  ASAN_OPTIONS="$ASAN" exec -a "${TARGET:t}" "${(@)CMD}"
   retcode=$?
 
   # —— Cleanup & Return ———————————————————————————————— #
