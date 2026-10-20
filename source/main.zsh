@@ -1,12 +1,15 @@
 #!/usr/bin/env zsh
 
+# ——————————————————————————————————————————————————————————————————————————— #
+
 function -- () {
-  local -r source_dir="${${(%):-%x}:a:h}"
-  source "$source_dir/error.zsh"
-  source "$source_dir/usage.zsh"
-  source "$source_dir/charsets.zsh"
-  source "$source_dir/read-input.zsh"
+  local -r root="${${(%):-%x}:a:h}"
+  local file
+
+  for file in "$root/"{error,usage,charsets,read-input}'.zsh'; source "$file"
 }
+
+# ——————————————————————————————————————————————————————————————————————————— #
 
 function see () {
 
@@ -120,6 +123,8 @@ function see () {
 
   if (( do_colours )) echo -n "$_hard_reset"  # see ../notes/hard-reset.note
 
+  local -i 2 esc_is_active=0;
+
   # even though this looks like associative array syntax, it's not.
   #  I'm iterating through the zipped chars and hexes arrays, so zsh splits
   #  them for me, hence the separate char and hex variables
@@ -156,7 +161,23 @@ function see () {
       }
     }
 
+    # esc is continued by 0x20 → 0x2F <<< !"#$%&'()*+,-./>>>
+    # (not implemented)
+    if (( esc_is_active && do_colours )) echo -nE - $'\e[38;5;33m'
+
     echo -nE - "$char"
+
+    # esc is activated by `0x1B` == <<<\e>>>
+    if (( 16#$hex == 0x1B )) esc_is_active=1
+    # esc is terminated by `0x40 → 0x7E` == <<<@A–Z[\]^_`a–z{|}~>>>
+    # (not fully implemented)
+    if (( ( ( ##a <= 16#$hex && 16#$hex <= ##z ) ||
+            ( ##A <= 16#$hex && 16#$hex <= ##Z )
+          ) && do_colours
+    )) {
+      echo -nE - $'\e[m'
+      esc_is_active=0
+    }
 
     # ~— Text Mode ————————————————————————————— #
     # there's no more processing to do for text mode
