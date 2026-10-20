@@ -4,14 +4,16 @@
 #include <errno.h>
 #include <string.h>
 
+/* —— Definitions —————————————————————————————————————————————————————————————————————————————————————————————————— */
+
 /** @brief `BUFSIZE` == `(1 << 12)` == `4,096 B` == `4 kB` */
 #define BUFSIZE (1 << 12)
 
 typedef int errno_t;
 
-/* ————————————————————————————————————————————————————————————————————————————————————————————————————————————————— */
+/* —— getFilePointer() ————————————————————————————————————————————————————————————————————————————————————————————— */
 
-FILE *getFilePointer(const int argc, const char *const *const argv) {
+static inline FILE *getFilePointer(const int argc, const char *const *const argv) {
 
 	if (argc < 2) return stdin;
 
@@ -33,18 +35,13 @@ FILE *getFilePointer(const int argc, const char *const *const argv) {
 	return NULL;
 }
 
-/* ————————————————————————————————————————————————————————————————————————————————————————————————————————————————— */
+/* —— readFile() ——————————————————————————————————————————————————————————————————————————————————————————————————— */
 
-int main(const int argc, const char *const *const argv) {
-
-	FILE *const pfile = getFilePointer(argc, argv);
-	if (pfile == NULL) return 1;
+static inline int readFile(FILE *const pfile) {
+	char buffer[BUFSIZE];
+	size_t read_len;
 
 	/* —————————————————————————————————————————————————————— */
-
-	char buffer[BUFSIZE];
-
-	size_t read_len;
 
 	// read `BUFSIZE` objects, each  `1` byte long
 	while (( read_len = fread(buffer, 1, BUFSIZE, pfile) )) {
@@ -55,6 +52,24 @@ int main(const int argc, const char *const *const argv) {
 
 	/* —————————————————————————————————————————————————————— */
 
-	if (pfile != stdin) fclose(pfile);
 	return 0;
 }
+
+/* —— main() ——————————————————————————————————————————————————————————————————————————————————————————————————————— */
+
+int main(const int argc, const char *const *const argv) {
+
+	FILE *const pfile = getFilePointer(argc, argv);
+	if (pfile == NULL) return 1;
+
+	/* —————————————————————————————————————————————————————— */
+
+	const int retcode = readFile(pfile);
+
+	/* —————————————————————————————————————————————————————— */
+
+	if (pfile != stdin) fclose(pfile);
+	return retcode;
+}
+
+/* ————————————————————————————————————————————————————————————————————————————————————————————————————————————————— */
