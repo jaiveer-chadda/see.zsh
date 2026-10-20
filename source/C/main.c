@@ -4,7 +4,8 @@
 #include <errno.h>
 #include <string.h>
 
-#define BUFSIZE 256
+/** @brief `BUFSIZE` == `(1 << 12)` == `4,096 B` == `4 kB` */
+#define BUFSIZE (1 << 12)
 
 typedef int errno_t;
 
@@ -43,9 +44,13 @@ int main(const int argc, const char *const *const argv) {
 
 	char buffer[BUFSIZE];
 
-	// `fgets` reads until a newline, `EOF`, or `BUFSIZE` is reached
-	while (fgets(buffer, BUFSIZE, pfile)) {
-		printf("%s", buffer);
+	size_t read_len;
+
+	// read `BUFSIZE` objects, each  `1` byte long
+	while (( read_len = fread(buffer, 1, BUFSIZE, pfile) )) {
+		for (size_t i = 0; i < read_len; i++) {
+			putchar(buffer[i]);
+		}
 	}
 
 	/* —————————————————————————————————————————————————————— */
