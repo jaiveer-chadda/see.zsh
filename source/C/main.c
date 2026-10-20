@@ -2,7 +2,10 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <wchar.h>
 #include <string.h>
+#include <locale.h>
+#include <inttypes.h>
 
 /* —— Definitions —————————————————————————————————————————————————————————————————————————————————————————————————— */
 
@@ -35,6 +38,33 @@ static inline FILE *getFilePointer(const int argc, const char *const *const argv
 	return NULL;
 }
 
+/* —— processChar() ———————————————————————————————————————————————————————————————————————————————————————————————— */
+
+static inline void processChar(const char chr) {
+	switch (chr) {
+		case ' ' : putwc( L'·', stdout); return;
+		case '\0': fputs("\\0", stdout); return;
+		case '\a': fputs("\\a", stdout); return;
+		case '\b': fputs("\\b", stdout); return;
+		case '\t': fputs("\\t", stdout); return;
+		case '\v': fputs("\\v", stdout); return;
+		case '\f': fputs("\\f", stdout); return;
+		case '\r': fputs("\\r", stdout); return;
+		case'\33': fputs("\\e", stdout); return;
+		case '\n':	puts("\\n"		  ); return;
+
+		default: {
+			if ('\1' <= chr && chr <= '\7') {
+				printf("\\%hhu", (uint8_t)chr);
+			} else if (('\x8' <= chr && chr <= '\x1F') || chr == '\x7F') {
+				printf("\\%02x", (uint8_t)chr);
+			} else {
+				putchar(chr);
+			}
+		}
+	}
+}
+
 /* —— readFile() ——————————————————————————————————————————————————————————————————————————————————————————————————— */
 
 static inline int readFile(FILE *const pfile) {
@@ -46,7 +76,7 @@ static inline int readFile(FILE *const pfile) {
 	// read `BUFSIZE` objects, each  `1` byte long
 	while (( read_len = fread(buffer, 1, BUFSIZE, pfile) )) {
 		for (size_t i = 0; i < read_len; i++) {
-			putchar(buffer[i]);
+			processChar(buffer[i]);
 		}
 	}
 
@@ -58,6 +88,11 @@ static inline int readFile(FILE *const pfile) {
 /* —— main() ——————————————————————————————————————————————————————————————————————————————————————————————————————— */
 
 int main(const int argc, const char *const *const argv) {
+
+	const char *const locale = setlocale(LC_ALL, "");
+	if(!strstr(locale, "UTF-8")) fprintf(stderr, "Warning: Non-UTF-8 locale `%s`\n", locale);
+
+	/* —————————————————————————————————————————————————————— */
 
 	FILE *const pfile = getFilePointer(argc, argv);
 	if (pfile == NULL) return 1;
