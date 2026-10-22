@@ -19,8 +19,8 @@
 #define IN_RANGE(val, min, max) ((min) <= (val) && (val) <= (max))
 
 typedef int errno_t;
+typedef uint8_t uchar;
 typedef uint32_t chr32_t;
-typedef unsigned char uchar;
 
 /* —— getFilePointer() ————————————————————————————————————————————————————————————————————————————————————————————— */
 
@@ -76,23 +76,41 @@ static inline CharType getASCII(const uchar chr) {
 
 /* ————————————————————————————————————————————————————————————————————————————————————————————————————————————————— */
 
-#define NEW_SEQ(by)	(by_left = ((by) - 1), seq_len = (by))
-#define END_SEQ		(by_left = 0, seq_len = 0, payload = 0)
+#define MAX_SEQ_LEN 4
+
+#define RESET_BUF	(memset(seq_buf, 0, sizeof(seq_buf)))
+#define SET_BUF(c)	(seq_buf[seq_len - by_left - 1] = (c))
+
+#define NEW_SEQ(by)	(by_left = ((by) - 1), seq_len = (by), SET_BUF(chr))
+#define END_SEQ		(by_left = 0, seq_len = 0, payload = 0, RESET_BUF)
+#define CON_SEQ		(by_left--, SET_BUF(chr))
+
 #define SEQ_ACTIVE	(by_left != 0)
 
+/* —————————————————————————————————————————————————————— */
+
+#define SURROGATE_MIN	((chr32_t)0xD800)
+#define SURROGATE_MAX	((chr32_t)0xDFFF)
+
+#define MAX_CPOINT		((chr32_t)0x10FFFF)
+#define MIN_CPOINTS		((chr32_t[]){							\
+	0, 0,														\
+	(1 <<  7), /* below this, a single ASCII byte suffices */	\
+	(1 << 11), /* below this, 2 bytes suffice */				\
+	(1 << 16), /* below this, 3 bytes suffice */				\
+})
+
+#define IS_CODEPOINT_VALID(cp, len) ((bool)( \
+	(IN_RANGE((cp), MIN_CPOINTS[(len)], MAX_CPOINT)) ||	/* if the resultant codepoint is in bounds */ \
+	!IN_RANGE((cp), SURROGATE_MIN, SURROGATE_MAX)		/*	and isn't a UTF-16 surrogate codepoint */ \
+))
+
+/* —————————————————————————————————————————————————————— */
+
 static inline void processChar(const uchar chr) {
-	static const chr32_t SURROGATE_MIN = 0xD800, SURROGATE_MAX = 0xDFFF;
-	static const chr32_t MAX_CPOINT = 0x10FFFF;
-	static const chr32_t MIN_CPOINTS[] = {
-		0, 0,
-		(1 <<  7), // below this, a single ASCII byte should be used
-		(1 << 11), // below this, 2 bytes suffice
-		(1 << 16), // below this, 3 bytes suffice
-	};
+	static uchar seq_buf[MAX_SEQ_LEN] = {0}; /** The raw bytes that make up the current UTF-8 sequence. */
 
-	/* —————————————————————————————————————————————————————— */
-
-	static chr32_t payload = 0; /** Unicode/UTF-8 character value. */
+	static chr32_t payload = 0; /** Unicode/UTF-8 character codepoint. */
 	static uint8_t seq_len = 0; /** Length of current sequence. */
 	static uint8_t by_left = 0; /** Bytes left/remaining. */
 
@@ -107,16 +125,18 @@ static inline void processChar(const uchar chr) {
 	else if	((chr >> 1) == 0b1100000) c_type = CHAR_INVALID, END_SEQ; // overlong encoding
 	else if ((chr >> 6) == 0b10		) {	// check whether we were expecting a continuation byte or not
 		if (!SEQ_ACTIVE)			  c_type = CHAR_INVALID, END_SEQ;
-		else						  c_type = CHAR_CONTINU, by_left-- , payload |= (chr & 0b111111) << (6 * by_left);
-	}									// header bytes for multibyte chars
+		else						  c_type = CHAR_CONTINU, CON_SEQ,	 payload |= (chr & 0b111111) << (6 * by_left);
+	}									// header bytes for multibyte character sequences
 	else if ((chr >> 5) == 0b110	) c_type = CHAR_2B_HEAD, NEW_SEQ(2), payload  = (chr &	0b11111) << (6 * by_left);
 	else if ((chr >> 4) == 0b1110	) c_type = CHAR_3B_HEAD, NEW_SEQ(3), payload  = (chr &	 0b1111) << (6 * by_left);
 	else if ((chr >> 3) == 0b11110	) c_type = CHAR_4B_HEAD, NEW_SEQ(4), payload  = (chr &	  0b111) << (6 * by_left);
 
 	else							  c_type = CHAR_INVALID, END_SEQ; // invalid byte (too large)
 
-	assert(seq_len <= 4);
-	assert(by_left <= 3);
+	/* —————————————————————————————————————————————————————— */
+
+	assert(seq_len <= MAX_SEQ_LEN);
+	assert(by_left <= MAX_SEQ_LEN - 1);
 
 	/* —————————————————————————————————————————————————————— */
 
@@ -129,13 +149,23 @@ static inline void processChar(const uchar chr) {
 	//	- a single-byte sequence (ASCII, `0xC0`/`0xC1`, `0xF8 → 0xFF`, a stray continuation byte)
 	//	- the last continuation byte of a multi-byte char
 
-	if (c_type == CHAR_CONTINU) { // if we just finished a multibyte char (i.e. just parsed a continuation byte)
-		if (!IN_RANGE(payload, MIN_CPOINTS[seq_len], MAX_CPOINT) ||	// if the resultant codepoint is out of bounds
-			(IN_RANGE(payload, SURROGATE_MIN, SURROGATE_MAX))		//	or is a UTF-16 surrogate codepoint
-		) c_type = CHAR_INVALID; // then it's an invalid sequence, and should be marked as such
+	// if we just finished a multibyte char (i.e. just parsed a continuation byte), and the resultant
+	//	codepoint isn't valid, then the sequence was invalid, and should be marked as such
+	if (c_type == CHAR_CONTINU && !IS_CODEPOINT_VALID(payload, seq_len)) c_type = CHAR_INVALID;
 
-		seq_len = 0; // since we've finished a multibyte char, reset the sequence length back to 0
+	/* —————————————————————————————————————————————————————— */
+
+	/*TEMP:*/ {
+		fputs("\33[31m", stdout);
+		for (uint8_t i = 0; i < seq_len; i++) {
+			assert(seq_buf[i] != '\0');
+			putchar(seq_buf[i]);
+		}
+		fputs("\33[m", stdout);
 	}
+
+	// if we've finished a multibyte char, reset the sequence length back to 0
+	if (c_type == CHAR_CONTINU) seq_len = 0;
 
 	/* processMultibyteChar(payload, c_type); */
 }
