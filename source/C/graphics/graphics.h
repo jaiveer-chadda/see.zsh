@@ -1,7 +1,7 @@
 /// @file graphics/graphics.h
 
-#ifndef GRAPHICS_H_
-#define GRAPHICS_H_
+#ifndef GRAPHICS__GRAPHICS_H_
+#define GRAPHICS__GRAPHICS_H_
 
 typedef enum CharType {
 	CHAR_ASCII	, /** Normal ASCII Character (0x21 -> 0x7E). */
@@ -27,4 +27,4 @@ typedef enum CharType {
 
 #define CHAR_IS_ASCII(ct) ((bool)(((CharType)ct) < CHAR_ASCII_MAX))
 
-#endif /* !GRAPHICS_H_ */
+#endif /* !GRAPHICS__GRAPHICS_H_ */

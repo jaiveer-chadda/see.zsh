@@ -8,7 +8,7 @@ root = true
     insert_final_newline = true
     spelling_language    = en-GB
 
-[*.[ch]]
+[*.{[ch],json{c,}}]
     indent_style = tab
     indent_size  = 4
 

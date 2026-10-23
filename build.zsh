@@ -50,6 +50,8 @@ function -- () {
     extra    # warn about deeper code issues, which aren't always necessary
     pedantic # warn about the most minute issues like standard compliance, etc.
     vla      # don't allow the use of variable-length arrays
+    \#warnings
+    \#pragma-messages
   )
 
   # all `-W-no-...` warnings to disable
