@@ -13,14 +13,25 @@
 
 /* —— Definitions —————————————————————————————————————————————————————————————————————————————————————————————————— */
 
-/** @brief `BUFSIZE` == `(1 << 12)` == `4,096 B` == `4 kB` */
+/**
+ * @brief The size of the buffer read into by `fread`.
+ *
+ * ```C
+ * BUFSIZE == (1 << 12) == 4,096 B == 4 kB
+ * ```
+ */
 #define BUFSIZE (1 << 12)
+
+/** @brief The maximum number of bytes it takes to encode a Unicode character. */
 #define MAX_SEQ_LEN 4
 
+/**
+ * @brief Test if a value is within a range (inclusive).
+ *
+ * @return `true` if `val` is in the range `[min,max]`,
+ * @return `false` otherwise
+ */
 #define IN_RANGE(val, min, max) ((min) <= (val) && (val) <= (max))
-
-#define U__STRINGIFY(val) #val
-#define STRINGIFY(val) U__STRINGIFY(val)
 
 /* —————————————————————————————————————————————————————— */
 
@@ -30,6 +41,16 @@ typedef uint32_t chr32_t;
 
 /* —— getFilePointer() ————————————————————————————————————————————————————————————————————————————————————————————— */
 
+/**
+ * @brief Get a pointer to the file referenced by the filepath in `argv[1]`.
+ *
+ * If no arguments were passed to the program (`argc == 1`), return a pointer to `stdin`.
+ *
+ * @param argc[in] The number of arguments passed to the program.
+ * @param argv[in] The array of string arguments passed to the program.
+ *
+ * @return `FILE*` – a pointer to the file referenced by the filepath in `argv[1]`.
+ */
 static inline FILE *getFilePointer(const int argc, const char *const *const argv) {
 
 	if (argc < 2) return stdin;
@@ -54,6 +75,14 @@ static inline FILE *getFilePointer(const int argc, const char *const *const argv
 
 /* —— processMultibyteChar() ——————————————————————————————————————————————————————————————————————————————————————— */
 
+/**
+ * @brief Process & print a multibyte UTF-8 character.
+ *
+ * @param type[in]		The type of the last byte parsed (usually only relevant to check it equals `CHAR_INVALID`).
+ * @param seq_buf[in]	An array containing the individual bytes that make up a UTF-8 character.
+ * @param seq_len[in]	The number of significant elements in `seq_buf`.
+ * @param codepoint[in]	The UTF-8 codepoint created from parsing the first `seq_len` characters of `seq_buf`.
+ */
 static inline void processMultibyteChar(
 	const char8_t seq_buf[MAX_SEQ_LEN], const uint8_t seq_len, const chr32_t codepoint, const CharType type
 ) {
@@ -70,12 +99,23 @@ static inline void processMultibyteChar(
 }
 
 /* —— processASCIIChar() ——————————————————————————————————————————————————————————————————————————————————————————— */
-/* —— processChar() ———————————————————————————————————————————————————————————————————————————————————————————————— */
 
 #define DO_OCT_ESC(c)  IN_RANGE(c, '\1', '\7' )
 #define DO_HEX_ESC(c) (IN_RANGE(c,'\x8','\x1F') || (c) == '\x7F')
 
+/**
+ * @brief Process & print an ASCII character.
+ *
+ * Process any character in the range `0x00` —→ `0x7F`.
+ *
+ * @pre `0x00 <= chr <= 0x7F`
+ *
+ * @param chr[in] The character to be processed.
+ * @return `CharType` – The type of character that was processed.
+ */
 static inline CharType processASCIIChar(const char8_t chr) {
+	assert(IN_RANGE(chr, 0x00, 0x7F));
+
 	switch (chr) {
 		case ' ' : putwc( L'·', stdout); return CHAR_SPACE	;
 		case '\0': fputs("\\0", stdout); return CHAR_NULL	;
@@ -100,21 +140,53 @@ static inline CharType processASCIIChar(const char8_t chr) {
 
 /* —— processChar() ———————————————————————————————————————————————————————————————————————————————————————————————— */
 
+/** @brief Reset `seq_buf` to its default state (all nullbytes). */
 #define RESET_BUF	(memset(seq_buf, 0, sizeof(seq_buf)))
+/** @brief Set the buffer at the current position to `c`.
+ *
+ * Assign `c` to `seq_buf`, indexed at the current character position (`seq_len - by_left - 1`).
+ */
 #define SET_BUF(c)	(seq_buf[seq_len - by_left - 1] = (c))
 
+/** @brief Set up a new sequence of length `by`. */
 #define NEW_SEQ(by)	(by_left = ((by) - 1), seq_len = (by), SET_BUF(chr))
+/** @brief Reset the active sequence (called on failure). */
 #define END_SEQ		(by_left = 0, seq_len = 0, payload = 0, RESET_BUF)
+/** @brief Successfully complete the parsing of this character, adding its value to the buffer. */
 #define CON_SEQ		(by_left--, SET_BUF(chr))
 
+/** @brief True if the function is expecting at least one more continuation byte. */
 #define SEQ_ACTIVE	(by_left != 0)
 
 /* —————————————————————————————————————————————————————— */
 
+/** @brief Lower bound of the UTF-16 surrogate codepoints, the values of which are disallowed in UTF-8. */
 #define SURROGATE_MIN	((chr32_t)0xD800)
+/** @brief Upper bound of the UTF-16 surrogate codepoints, the values of which are disallowed in UTF-8. */
 #define SURROGATE_MAX	((chr32_t)0xDFFF)
 
+/** @brief The largest UTF-8 codepoint specified by the [Unicode Standard](https://www.unicode.org/standard). */
 #define MAX_CPOINT		((chr32_t)0x10FFFF)
+/** @brief An array of the minimum accepted codepoints for each possible length of sequence.
+ *
+ * ---
+ *
+ * Below any of these minima, a multibyte character can (and must) be represented by a shorter sequence.
+ *
+ * To eliminate ambiguity (and a few other issues), the [Unicode Standard](https://www.unicode.org/standard) declares
+ *	that these "overlong" sequences are invalid, and should not be parsed as UTF-8, no matter their codepoint.
+ *
+ * ---
+ *
+ * @note Sequences can be 1, 2, 3, or 4 bytes long.
+ *
+ *	- There are no sequences of length 0. This array _should_ never (and hopefully by design, _will_ never)
+ *		be indexed at position `0`. As an acknowledgement, of this, `MIN_CPOINTS[0]` is set to `false`.
+ *
+ *	- Sequences which are a single byte long are ASCII characters. They do not have a minimum codepoint, therefore
+ *		can be said to have a minimum code point of `0`.
+ *
+ */
 #define MIN_CPOINTS		((chr32_t[MAX_SEQ_LEN + 1]){										\
 	false,	/* there are no 0-length sequences - this array will never be indexed at 0 */	\
 	0,		/* length 1 sequences (i.e. ASCII chars) don't have a minimum value */			\
@@ -123,6 +195,7 @@ static inline CharType processASCIIChar(const char8_t chr) {
 	(1 << 16), /* below this, 3 bytes suffice */											\
 })
 
+/** @brief Test if the given codepoint `cp`, with seq length `len`, is within the valid ranges for a UTF-8 character. */
 #define IS_CODEPOINT_VALID(cp, len) ((bool)( \
 	(IN_RANGE((cp), MIN_CPOINTS[(len)], MAX_CPOINT)) ||	/* if the resultant codepoint is in bounds */ \
 	!IN_RANGE((cp), SURROGATE_MIN, SURROGATE_MAX)		/*	and isn't a UTF-16 surrogate codepoint */ \
@@ -130,6 +203,42 @@ static inline CharType processASCIIChar(const char8_t chr) {
 
 /* —————————————————————————————————————————————————————— */
 
+/**
+ * @brief Process a single character from input.
+ *
+ * ---
+ *
+ * Determine whether the inputted character is an ASCII char or not, and dispatch the character/character buffer
+ *	to the associated processing function (either `processASCIIChar` or `processMultibyteChar`).
+ *
+ * The determination/validation is done using function-static variables (described below) which track the past few
+ *	characters to see if they, at any point, form a valid unicode sequence.
+ *
+ * ---
+ *
+ * If a valid unicode sequence _is_ found, then information about the sequence is passed to `processMultibyteChar`
+ *	to be processed.
+ *
+ * If at any point, however, we reach a point where it would be impossible to form a valid sequence, we run the
+ *	`processMultibyteChar` function, with `type` being set to `CHAR_INVALID`.
+ *
+ * Finally, if a character is an ASCII byte, it is sent to `processASCIIChar`, and the UTF-8 parsing context is reset.
+ *
+ * ---
+ *
+ * @param  chr[in]	The character most recently passed as input.
+ *
+ * @static seq_buf	A byte buffer storing the unprocessed bytes that make up the current UTF-8 sequence.
+ * @static payload	The working/running version of the UTF-8 character being built's codepoint.
+ * @static seq_len	How long this current sequence will/should be once it's complete.
+ * @static by_left	Number of bytes left to parse in this sequence.
+ *
+ * ---
+ *
+ * @cond `seq_len <= MAX_SEQ_LEN`
+ * @cond `by_left <= MAX_SEQ_LEN - 1`
+ *
+ */
 static inline void processChar(const char8_t chr) {
 	static char8_t seq_buf[MAX_SEQ_LEN] = {0}; /** The raw bytes that make up the current UTF-8 sequence. */
 
@@ -187,6 +296,12 @@ static inline void processChar(const char8_t chr) {
 
 /* —— readFile() ——————————————————————————————————————————————————————————————————————————————————————————————————— */
 
+/**
+ * @brief Run `processChar()` on every character in a file.
+ *
+ * @param pfile[in,out] Pointer to the file which should be read from.
+ * @return `int` – A return code to be passed back to this program's caller.
+ */
 static inline int readFile(FILE *const pfile) {
 	char buffer[BUFSIZE];
 	size_t read_len;
@@ -210,7 +325,7 @@ static inline int readFile(FILE *const pfile) {
 int main(const int argc, const char *const *const argv) {
 
 	const char *const locale = setlocale(LC_ALL, "");
-	if(!strstr(locale, "UTF-8")) fprintf(stderr, "Warning: Non-UTF-8 locale `%s`\n", locale);
+	if(!strstr(locale, "UTF-8")) fprintf(stderr, "Warning: Non-UTF8 locale in use: `%s`\n", locale);
 
 	/* —————————————————————————————————————————————————————— */
 
@@ -223,7 +338,10 @@ int main(const int argc, const char *const *const argv) {
 
 	/* —————————————————————————————————————————————————————— */
 
+	// technically, since the program is about to exit, nothing terrible will happen
+	//	if we run `fclose` on `stdin`, but it's probably best practice to just ignore it
 	if (pfile != stdin) fclose(pfile);
+
 	return retcode;
 }
 

@@ -4,3 +4,4 @@ tests/_*
 ._*
 
 build/
+archive/
